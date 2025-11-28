@@ -79,37 +79,49 @@ Bitcoin Dashboard for Panlee SC01 Plus - A real-time Bitcoin data display runnin
 
 ## Development Commands
 
-### Build and Upload
+### Using Make (Recommended)
+
+The project includes a Makefile for convenient command shortcuts:
+
 ```bash
-# Build the project
-pio run
+# Build and Upload
+make build          # Build the project
+make upload         # Upload firmware to device
+make all            # Build and upload
+make flash          # Upload and monitor
 
-# Upload to device
-pio run --target upload
+# Monitoring
+make monitor        # Open serial monitor (115200 baud)
+make debug-monitor  # Monitor with exception decoder
 
-# Monitor serial output (115200 baud)
-pio device monitor
+# Maintenance
+make clean          # Clean build files
+make devices        # List connected devices
+make update         # Update PlatformIO and libraries
 
-# Build + Upload + Monitor in one command
-pio run --target upload && pio device monitor
+# Development
+make erase          # Erase flash memory
+make check          # Check configuration
+make libs           # Show library dependencies
+make info           # Show platform information
 ```
 
-### Cleaning
+### Using PlatformIO CLI Directly
+
 ```bash
-# Clean build artifacts
-pio run --target clean
-```
+# Build and Upload
+pio run                    # Build the project
+pio run --target upload    # Upload to device
+pio device monitor         # Monitor serial output (115200 baud)
+pio run --target upload && pio device monitor  # Build + Upload + Monitor
 
-### Debugging
-```bash
-# Monitor with filtered output (useful for debugging specific components)
-pio device monitor --filter esp32_exception_decoder
+# Cleaning
+pio run --target clean     # Clean build artifacts
 
-# Monitor with custom baud rate
-pio device monitor -b 115200
-
-# List connected devices
-pio device list
+# Debugging
+pio device monitor --filter esp32_exception_decoder  # Monitor with filtered output
+pio device monitor -b 115200  # Monitor with custom baud rate
+pio device list            # List connected devices
 ```
 
 ## Hardware Configuration
@@ -203,13 +215,23 @@ Note: mempool.space may have rate limits for frequent requests.
 
 ## Dependencies
 
-Managed via PlatformIO (platformio.ini:35-40):
-- lvgl/lvgl@^8.3.0 - UI framework
-- bodmer/TFT_eSPI@^2.5.0 - Display driver (configured via build flags)
+### External Dependencies
+
+Managed via PlatformIO (platformio.ini lib_deps):
+- lovyan03/LovyanGFX@^1.1.0 - Modern display driver library (replaces TFT_eSPI)
 - bblanchon/ArduinoJson@^6.21.0 - JSON parsing
 - FT6X36 touch driver from GitHub (strange-v/FT6X36.git)
 
-TFT_eSPI is configured entirely through build_flags - no User_Setup.h file needed.
+LovyanGFX is configured via build_flags in platformio.ini - no User_Setup.h file needed.
+
+### Internal Libraries
+
+Project-specific libraries are stored in the `libs/` directory. Currently empty - will be populated as the project grows with custom components like:
+- Bitcoin API client wrappers
+- Display management utilities
+- Custom UI components
+
+See the [Internal Libraries Directory](#internal-libraries-directory-libs) section for details on creating custom libraries.
 
 ## Code Modification Workflow
 
@@ -234,6 +256,98 @@ TFT_eSPI is configured entirely through build_flags - no User_Setup.h file neede
 - millis() rollover (after ~49 days) is not handled
 - Reducing intervals below 10s may trigger rate limiting
 - All three timers are independent - can run at different frequencies
+
+## Internal Libraries Directory (libs/)
+
+**Location:** `/Users/lps/Solutions/bemind-embeded/btc-dashboard/libs`
+
+The `libs/` directory is PlatformIO's standard location for project-specific internal libraries. Currently empty - custom libraries will be added here for:
+- Custom display drivers or wrappers
+- Bitcoin protocol utilities
+- Hardware abstraction layers
+- Reusable UI components
+- Custom data structures
+
+### Library Structure
+
+Each library should follow PlatformIO's library structure:
+```
+libs/
+└── MyLibrary/
+    ├── library.json          # Library metadata (optional)
+    ├── src/
+    │   ├── MyLibrary.h      # Header file
+    │   └── MyLibrary.cpp    # Implementation
+    └── examples/            # Example sketches (optional)
+```
+
+### When to Create Internal Libraries
+
+Create a library in `libs/` when:
+- Code is reusable across multiple files/screens
+- Functionality is self-contained and testable
+- You want to separate concerns (e.g., API client, display manager)
+- Code can be versioned and maintained independently
+
+### External vs Internal Libraries
+
+- **External libraries** (defined in `platformio.ini` `lib_deps`):
+  - LovyanGFX - Display driver
+  - ArduinoJson - JSON parsing
+  - FT6X36 - Touch controller
+
+- **Internal libraries** (in `libs/` directory):
+  - Project-specific code
+  - Custom hardware interfaces
+  - Application-specific utilities
+
+PlatformIO automatically includes libraries from `libs/` - no configuration needed.
+
+### Best Practices
+
+- Keep library names descriptive (e.g., `BitcoinAPI`, `DisplayManager`)
+- Include header guards in all `.h` files
+- Document public APIs with comments
+- Add examples for complex libraries
+- Consider adding `library.json` for metadata
+
+## Scripts Directory
+
+**Location:** `/Users/lps/Solutions/bemind-embeded/btc-dashboard/scripts`
+
+The scripts directory is reserved for build automation, deployment, and maintenance scripts. Currently empty - scripts will be added as needed for:
+- Automated firmware builds
+- Release packaging
+- Hardware testing utilities
+- Configuration management
+- Batch operations
+
+When adding scripts:
+- Use clear, descriptive filenames (e.g., `build-release.sh`, `test-hardware.sh`)
+- Include usage comments at the top of each script
+- Make scripts executable: `chmod +x scripts/script-name.sh`
+- Document in CLAUDE.md and README.md
+
+## Releases Directory
+
+**Location:** `/Users/lps/Solutions/bemind-embeded/btc-dashboard/releases`
+
+The releases directory stores pre-compiled firmware binaries for easy deployment. Currently empty - releases will be created for:
+- Stable version releases
+- Beta/testing builds
+- Hardware-specific configurations
+
+Release naming convention:
+- Format: `btc-dashboard-v{version}-{variant}.bin`
+- Example: `btc-dashboard-v1.0.0-sc01plus.bin`
+- Include release notes in `releases/CHANGELOG.md`
+
+To create a release:
+1. Build firmware: `make build`
+2. Copy binary from `.pio/build/sc01_plus/firmware.bin`
+3. Rename with version: `btc-dashboard-v{version}.bin`
+4. Place in `releases/` directory
+5. Update `releases/CHANGELOG.md` with changes
 
 ## Troubleshooting
 

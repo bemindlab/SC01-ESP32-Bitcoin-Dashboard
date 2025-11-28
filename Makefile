@@ -1,7 +1,7 @@
 # Makefile for Bitcoin Dashboard (ESP32-S3)
 # Provides convenient shortcuts for PlatformIO commands
 
-.PHONY: help build upload monitor clean test devices all update
+.PHONY: help build upload monitor clean test devices all update screenshot
 
 # Default target
 help:
@@ -24,6 +24,7 @@ help:
 	@echo "  make debug-monitor  - Monitor with exception decoder"
 	@echo "  make erase          - Erase flash memory"
 	@echo "  make check          - Check configuration"
+	@echo "  make screenshot     - Capture device screen to .tmp/"
 	@echo ""
 
 # Build the project
@@ -95,3 +96,19 @@ libs:
 info:
 	@echo "Platform information:"
 	python3 -m platformio platform show espressif32
+
+# Capture device screenshot
+screenshot:
+	@echo "Capturing device screen..."
+	@mkdir -p /Users/lps/Solutions/bemind-embeded/btc-dashboard/.tmp
+	@TIMESTAMP=$$(date +%Y%m%d_%H%M%S); \
+	echo "Screenshot will be saved to: .tmp/screenshot_$$TIMESTAMP.raw"; \
+	echo ""; \
+	echo "Note: Screen capture requires custom firmware support."; \
+	echo "To enable screenshots:"; \
+	echo "  1. Add screen capture code to src/main.cpp"; \
+	echo "  2. Send display buffer data via Serial when triggered"; \
+	echo "  3. Use this command to save the data"; \
+	echo ""; \
+	echo "For now, you can manually trigger a screen dump via serial commands."; \
+	echo "Output directory: .tmp/"
