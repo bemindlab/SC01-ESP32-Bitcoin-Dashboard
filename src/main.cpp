@@ -7,8 +7,8 @@
 #include <FT6X36.h>
 
 // ==================== Configuration ====================
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID = "Home 123_69_2.4G";
+const char* WIFI_PASSWORD = "0850971423";
 
 // API Endpoints (mempool.space)
 const char* API_PRICE = "https://mempool.space/api/v1/prices";
@@ -23,7 +23,7 @@ const unsigned long MEMPOOL_INTERVAL = 30000;    // 30 sec
 
 // ==================== Display Setup ====================
 TFT_eSPI tft = TFT_eSPI();
-FT6X36 touch(Wire);
+FT6X36 touch(&Wire, -1);  // Wire pointer, no interrupt pin
 
 static const uint16_t screenWidth = 480;
 static const uint16_t screenHeight = 320;
@@ -71,11 +71,24 @@ void my_disp_flush(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color
 }
 
 // ==================== Touch Read ====================
+bool touchPressed = false;
+uint16_t touchX = 0, touchY = 0;
+
+void touchHandler(TPoint point, TEvent event) {
+    if (event != TEvent::None) {
+        touchPressed = true;
+        touchX = point.x;
+        touchY = point.y;
+    } else {
+        touchPressed = false;
+    }
+}
+
 void my_touchpad_read(lv_indev_drv_t* indev_driver, lv_indev_data_t* data) {
-    if (touch.read()) {
+    if (touchPressed) {
         data->state = LV_INDEV_STATE_PR;
-        data->point.x = touch.getX();
-        data->point.y = touch.getY();
+        data->point.x = touchX;
+        data->point.y = touchY;
     } else {
         data->state = LV_INDEV_STATE_REL;
     }
@@ -306,6 +319,7 @@ void setup() {
     // Initialize touch
     Wire.begin(18, 19);  // SDA, SCL for SC01 Plus
     touch.begin();
+    touch.registerTouchHandler(touchHandler);
     
     // Initialize LVGL
     lv_init();
@@ -357,8 +371,9 @@ void setup() {
 
 // ==================== Main Loop ====================
 void loop() {
+    touch.loop();  // Process touch events
     lv_task_handler();
-    
+
     unsigned long now = millis();
     
     // Update price
