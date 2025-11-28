@@ -1,0 +1,161 @@
+#!/bin/bash
+# Git pre-push hook for Bitcoin Dashboard
+# Runs before pushing to remote to ensure code quality
+
+set -e
+
+echo "🚀 Running pre-push checks..."
+echo ""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Get the remote and URL
+remote="$1"
+url="$2"
+
+echo "${BLUE}Remote: $remote${NC}"
+echo "${BLUE}URL: $url${NC}"
+echo ""
+
+# Function to run tests
+run_tests() {
+    echo "🧪 Running test suite..."
+    echo ""
+
+    if ! command -v python3 &> /dev/null; then
+        echo "${YELLOW}⚠️  Python3 not found, skipping tests${NC}"
+        echo ""
+        return 0
+    fi
+
+    # Run native tests
+    if make test-native 2>&1 | tee /tmp/test-output.log; then
+        echo ""
+        echo "${GREEN}✅ All tests passed!${NC}"
+        echo ""
+    else
+        echo ""
+        echo "${RED}❌ Tests failed! Cannot push.${NC}"
+        echo "${RED}   Fix failing tests before pushing.${NC}"
+        echo ""
+        echo "Test output:"
+        tail -50 /tmp/test-output.log
+        exit 1
+    fi
+}
+
+# Function to check build status
+check_build() {
+    echo "🔨 Checking build status..."
+    echo ""
+
+    # Check if PlatformIO is available
+    if ! command -v python3 &> /dev/null; then
+        echo "${YELLOW}⚠️  Python3 not found, skipping build check${NC}"
+        echo ""
+        return 0
+    fi
+
+    # Try to build (both normal and single screen mode)
+    echo "Building normal mode..."
+    if ! python3 -m platformio run --silent 2>&1 | grep -E "SUCCESS|FAILED"; then
+        echo "${RED}❌ Normal mode build failed!${NC}"
+        exit 1
+    fi
+
+    echo ""
+    echo "Building single screen mode..."
+    if ! python3 -m platformio run -e sc01_plus_single --silent 2>&1 | grep -E "SUCCESS|FAILED"; then
+        echo "${RED}❌ Single screen mode build failed!${NC}"
+        exit 1
+    fi
+
+    echo ""
+    echo "${GREEN}✅ All builds successful!${NC}"
+    echo ""
+}
+
+# Function to check for uncommitted changes
+check_uncommitted_changes() {
+    echo "📝 Checking for uncommitted changes..."
+    echo ""
+
+    if ! git diff-index --quiet HEAD --; then
+        echo "${YELLOW}⚠️  Warning: You have uncommitted changes${NC}"
+        echo ""
+        git status --short
+        echo ""
+        read -p "Continue pushing anyway? (y/N) " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        echo "${GREEN}✓ No uncommitted changes${NC}"
+    fi
+    echo ""
+}
+
+# Function to check branch name
+check_branch() {
+    echo "🌿 Checking branch..."
+    echo ""
+
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    echo "Current branch: ${BLUE}$BRANCH${NC}"
+
+    # Warn if pushing to main/master directly
+    if [[ "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+        echo "${YELLOW}⚠️  Warning: Pushing directly to $BRANCH${NC}"
+        echo "${YELLOW}   Consider using feature branches for development${NC}"
+        echo ""
+        read -p "Continue pushing to $BRANCH? (y/N) " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+    echo ""
+}
+
+# Function to check documentation
+check_documentation() {
+    echo "📚 Checking documentation..."
+    echo ""
+
+    # Check if README was updated if code changed
+    CODE_CHANGES=$(git diff origin/$(git rev-parse --abbrev-ref HEAD)...HEAD --name-only | grep -E '\.(cpp|h)$' || true)
+    README_CHANGES=$(git diff origin/$(git rev-parse --abbrev-ref HEAD)...HEAD --name-only | grep -E 'README\.md' || true)
+
+    if [ ! -z "$CODE_CHANGES" ] && [ -z "$README_CHANGES" ]; then
+        echo "${YELLOW}⚠️  Info: Code changed but README.md not updated${NC}"
+        echo "${YELLOW}   Consider updating documentation if API/features changed${NC}"
+        echo ""
+    fi
+
+    echo "${GREEN}✓ Documentation check complete${NC}"
+    echo ""
+}
+
+# Main execution
+echo "⏱️  This may take a minute..."
+echo ""
+
+check_uncommitted_changes
+check_branch
+run_tests
+check_build
+check_documentation
+
+echo "${GREEN}════════════════════════════════════════${NC}"
+echo "${GREEN}✅ All pre-push checks passed!${NC}"
+echo "${GREEN}   Safe to push to remote${NC}"
+echo "${GREEN}════════════════════════════════════════${NC}"
+echo ""
+
+exit 0

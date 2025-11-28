@@ -37,7 +37,11 @@ Development planning, roadmaps, and improvement proposals.
 ### ✨ Features ([`features/`](./features/))
 Feature specifications and planning documents.
 
-- **[btc-news-feature-plan.md](./features/btc-news-feature-plan.md)** - Bitcoin news feed feature planning
+- **[btc-news-feature-plan.md](./features/btc-news-feature-plan.md)** - Bitcoin news feed feature (Gemini AI)
+- **[btc-trading-suggestion-plan.md](./features/btc-trading-suggestion-plan.md)** - AI trading suggestions (OpenAI GPT)
+- **[sd-card-logging-plan.md](./features/sd-card-logging-plan.md)** - SD card logging system specification - **NEW**
+- **[navigation-diagram.md](./features/navigation-diagram.md)** - Screen navigation flow diagram
+- **[touch-feedback-specification.md](./features/touch-feedback-specification.md)** - Touch feedback system specification
 
 ## Complete Document Index
 
@@ -93,13 +97,20 @@ Feature specifications and planning documents.
 
 | Document | Category | Description | Status |
 |----------|----------|-------------|--------|
-| [btc-news-feature-plan.md](./features/btc-news-feature-plan.md) | Features | Bitcoin news feed integration planning | Proposed |
+| [btc-news-feature-plan.md](./features/btc-news-feature-plan.md) | Features | Bitcoin news feed integration planning | ✅ Implemented |
+| [btc-trading-suggestion-plan.md](./features/btc-trading-suggestion-plan.md) | Features | AI-powered trading suggestions (OpenAI GPT) | ✅ Implemented |
+| [sd-card-logging-plan.md](./features/sd-card-logging-plan.md) | Features | SD card logging system specification | ⏳ Planned (v1.1.0) |
+| [navigation-diagram.md](./features/navigation-diagram.md) | Features | Screen navigation flow diagram | ✅ Implemented |
+| [touch-feedback-specification.md](./features/touch-feedback-specification.md) | Features | Touch feedback system specification | ✅ Implemented |
 
-**Planned Features:**
-- Live Bitcoin news from multiple sources
-- Scrollable news list with touch support
-- News caching for offline viewing
-- Configurable update intervals
+**SD Card Logging Features (Planned v1.1.0):**
+- Persistent system/API/error logging to SD card
+- Log rotation (daily files, size-based limits)
+- Historical Bitcoin data export (CSV format)
+- Crash dumps with stack traces
+- Configurable log levels (DEBUG/INFO/WARN/ERROR)
+- 30-day retention policy with auto-cleanup
+- <1% CPU overhead, buffered writes
 
 ## Quick Reference
 

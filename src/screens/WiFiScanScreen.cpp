@@ -6,10 +6,19 @@ void WiFiScanScreen::init(ScreenManager* mgr) {
     scrollOffset = 0;
     networkCount = 0;
 
+    // Initialize touch feedback
+    feedback.init(manager->getLCD());
+
     LGFX* lcd = manager->getLCD();
     lcd->fillScreen(COLOR_BG);
 
     drawHeader();
+
+    // Register refresh button feedback
+    refreshButtonFeedbackId = feedback.registerButton(
+        400, 10, 70, 30,
+        COLOR_BG, COLOR_HEADER, 5, 200
+    );
 
     // Show scanning message
     lcd->setTextColor(COLOR_TEXT, COLOR_BG);
@@ -18,6 +27,16 @@ void WiFiScanScreen::init(ScreenManager* mgr) {
     lcd->print("Scanning...");
 
     scanNetworks();
+
+    // Register network list items
+    for (int i = 0; i < networkCount; i++) {
+        int y = SCROLL_START_Y + (i * ITEM_HEIGHT);
+        networkFeedbackIds[i] = feedback.registerListItem(
+            10, y, 460, ITEM_HEIGHT - 5,
+            COLOR_ITEM_BG, COLOR_ITEM_SELECTED, COLOR_HEADER
+        );
+    }
+
     drawNetworkList();
 }
 
@@ -140,7 +159,8 @@ uint32_t WiFiScanScreen::getSignalColor(int rssi) {
 }
 
 void WiFiScanScreen::update() {
-    // Nothing to update continuously
+    // Update touch feedback animations (non-blocking)
+    feedback.update();
 }
 
 void WiFiScanScreen::handleTouch(int16_t x, int16_t y) {
@@ -149,6 +169,10 @@ void WiFiScanScreen::handleTouch(int16_t x, int16_t y) {
     // Check if refresh button tapped
     if (x >= 400 && x <= 470 && y >= 10 && y <= 40) {
         Serial.println("Refresh button tapped");
+
+        // Visual feedback - non-blocking flash
+        feedback.flash(refreshButtonFeedbackId);
+
         init(manager);  // Re-scan
         return;
     }
@@ -160,10 +184,14 @@ void WiFiScanScreen::handleTouch(int16_t x, int16_t y) {
         if (tappedIndex >= 0 && tappedIndex < networkCount) {
             Serial.printf("Selected network: %s\n", networks[tappedIndex].ssid.c_str());
             selectedIndex = tappedIndex;
+
+            // Visual feedback - highlight selected network
+            feedback.onTouchDown(networkFeedbackIds[tappedIndex]);
+
             drawNetworkList();
 
-            // Wait a moment to show selection
-            delay(300);
+            // Brief delay to show selection (feedback system handles animation)
+            delay(100);
 
             // Show connecting message
             LGFX* lcd = manager->getLCD();

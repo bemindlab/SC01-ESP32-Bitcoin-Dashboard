@@ -3,15 +3,21 @@
 
 #include "ScreenManager.h"
 #include "../Config.h"
+#include "../ui/TouchFeedbackManager.h"
 
 class SettingsScreen : public BaseScreen {
 private:
     ScreenManager* manager;
+    TouchFeedbackManager feedback;
 
     // UI state
     int selectedOption;
     bool editingKey;
     String tempApiKey;
+
+    // Touch feedback IDs
+    int backButtonFeedbackId;
+    int optionFeedbackIds[5];  // One for each option
 
     // Colors
     static const uint32_t COLOR_BG = 0x000000;

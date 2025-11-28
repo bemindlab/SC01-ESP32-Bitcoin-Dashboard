@@ -22,6 +22,7 @@ bool ConfigManager::load() {
 
     // Load API keys
     config.geminiApiKey = preferences.getString(CONFIG_KEY_GEMINI_API, "");
+    config.openaiApiKey = preferences.getString(CONFIG_KEY_OPENAI_API, "");
 
     // Load WiFi credentials
     config.wifiSSID = preferences.getString(CONFIG_KEY_WIFI_SSID, "");
@@ -56,6 +57,7 @@ bool ConfigManager::save() {
 
     // Save API keys
     preferences.putString(CONFIG_KEY_GEMINI_API, config.geminiApiKey);
+    preferences.putString(CONFIG_KEY_OPENAI_API, config.openaiApiKey);
 
     // Save WiFi credentials
     preferences.putString(CONFIG_KEY_WIFI_SSID, config.wifiSSID);
@@ -99,6 +101,11 @@ void ConfigManager::reset() {
 void ConfigManager::setGeminiApiKey(const String& key) {
     config.geminiApiKey = key;
     Serial.println("Gemini API key updated");
+}
+
+void ConfigManager::setOpenAIApiKey(const String& key) {
+    config.openaiApiKey = key;
+    Serial.println("OpenAI API key updated");
 }
 
 void ConfigManager::setWiFiCredentials(const String& ssid, const String& password) {
@@ -163,6 +170,16 @@ void ConfigManager::printConfig() const {
         Serial.println("Gemini API Key: ****");
     } else {
         Serial.println("Gemini API Key: NOT SET");
+    }
+
+    if (config.openaiApiKey.length() > 8) {
+        String masked = config.openaiApiKey.substring(0, 4) + "..." +
+                       config.openaiApiKey.substring(config.openaiApiKey.length() - 4);
+        Serial.printf("OpenAI API Key: %s\n", masked.c_str());
+    } else if (config.openaiApiKey.length() > 0) {
+        Serial.println("OpenAI API Key: ****");
+    } else {
+        Serial.println("OpenAI API Key: NOT SET");
     }
 
     // WiFi credentials (hide password)

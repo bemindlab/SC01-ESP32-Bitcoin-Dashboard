@@ -9,6 +9,7 @@
 
 // Configuration keys
 #define CONFIG_KEY_GEMINI_API "gemini_key"
+#define CONFIG_KEY_OPENAI_API "openai_key"
 #define CONFIG_KEY_WIFI_SSID "wifi_ssid"
 #define CONFIG_KEY_WIFI_PASS "wifi_pass"
 #define CONFIG_KEY_PRICE_INTERVAL "price_int"
@@ -25,6 +26,7 @@
 struct AppConfig {
     // API Keys
     String geminiApiKey;
+    String openaiApiKey;
 
     // WiFi Credentials
     String wifiSSID;
@@ -41,6 +43,7 @@ struct AppConfig {
     // Constructor with defaults
     AppConfig() {
         geminiApiKey = "";
+        openaiApiKey = "";
         wifiSSID = "";
         wifiPassword = "";
         priceInterval = DEFAULT_PRICE_INTERVAL;
@@ -72,6 +75,7 @@ public:
 
     // Getters
     String getGeminiApiKey() const { return config.geminiApiKey; }
+    String getOpenAIApiKey() const { return config.openaiApiKey; }
     String getWiFiSSID() const { return config.wifiSSID; }
     String getWiFiPassword() const { return config.wifiPassword; }
     unsigned long getPriceInterval() const { return config.priceInterval; }
@@ -79,10 +83,12 @@ public:
     unsigned long getMempoolInterval() const { return config.mempoolInterval; }
     bool isFirstRun() const { return config.firstRun; }
     bool hasGeminiKey() const { return config.geminiApiKey.length() > 0; }
+    bool hasOpenAIKey() const { return config.openaiApiKey.length() > 0; }
     bool hasWiFiCredentials() const { return config.wifiSSID.length() > 0; }
 
     // Setters
     void setGeminiApiKey(const String& key);
+    void setOpenAIApiKey(const String& key);
     void setWiFiCredentials(const String& ssid, const String& password);
     void setPriceInterval(unsigned long interval);
     void setBlockInterval(unsigned long interval);

@@ -6,7 +6,22 @@ void BTCDashboardScreen::init(ScreenManager* mgr) {
     lastBlockUpdate = 0;
     lastMempoolUpdate = 0;
 
+    // Initialize touch feedback
+    feedback.init(manager->getLCD());
+
     setupUI();
+
+    // Register WiFi icon for touch feedback
+    wifiIconFeedbackId = feedback.registerIcon(
+        WIFI_ICON_X, WIFI_ICON_Y, WIFI_ICON_SIZE,
+        COLOR_CARD_BG, COLOR_BTC_ORANGE, 200
+    );
+
+    // Register Settings icon for touch feedback
+    settingsIconFeedbackId = feedback.registerIcon(
+        SETTINGS_ICON_X, SETTINGS_ICON_Y, SETTINGS_ICON_SIZE,
+        COLOR_CARD_BG, COLOR_BTC_ORANGE, 200
+    );
 
     // Fetch initial data
     Serial.println("Fetching initial Bitcoin data...");
@@ -305,6 +320,9 @@ void BTCDashboardScreen::updateUI() {
 }
 
 void BTCDashboardScreen::update() {
+    // Update touch feedback animations (non-blocking)
+    feedback.update();
+
     // Check WiFi connection
     if (WiFi.status() != WL_CONNECTED) {
         return;
@@ -344,15 +362,18 @@ void BTCDashboardScreen::handleTouch(int16_t x, int16_t y) {
     if (x >= SETTINGS_ICON_X && x <= (SETTINGS_ICON_X + SETTINGS_ICON_SIZE) &&
         y >= SETTINGS_ICON_Y && y <= (SETTINGS_ICON_Y + SETTINGS_ICON_SIZE)) {
 
-        Serial.println("Settings icon tapped - switching to Settings");
+        Serial.println("Settings icon tapped");
 
-        // Visual feedback - highlight icon
-        LGFX* lcd = manager->getLCD();
-        lcd->fillRoundRect(SETTINGS_ICON_X, SETTINGS_ICON_Y, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE, 5, COLOR_BTC_ORANGE);
-        delay(200);
+        // Visual feedback - non-blocking flash
+        feedback.flash(settingsIconFeedbackId);
 
+#ifdef SINGLE_SCREEN_MODE
+        Serial.println("SINGLE_SCREEN_MODE: Settings screen not available");
+        Serial.println("Use serial commands (STATUS, SET_*, GET_*)");
+#else
         // Switch to Settings screen
         manager->switchScreen(SCREEN_SETTINGS);
+#endif
         return;
     }
 
@@ -360,14 +381,17 @@ void BTCDashboardScreen::handleTouch(int16_t x, int16_t y) {
     if (x >= WIFI_ICON_X && x <= (WIFI_ICON_X + WIFI_ICON_SIZE) &&
         y >= WIFI_ICON_Y && y <= (WIFI_ICON_Y + WIFI_ICON_SIZE)) {
 
-        Serial.println("WiFi icon tapped - switching to WiFi config");
+        Serial.println("WiFi icon tapped");
 
-        // Visual feedback - highlight icon
-        LGFX* lcd = manager->getLCD();
-        lcd->fillRoundRect(WIFI_ICON_X, WIFI_ICON_Y, WIFI_ICON_SIZE, WIFI_ICON_SIZE, 5, COLOR_BTC_ORANGE);
-        delay(200);
+        // Visual feedback - non-blocking flash
+        feedback.flash(wifiIconFeedbackId);
 
+#ifdef SINGLE_SCREEN_MODE
+        Serial.println("SINGLE_SCREEN_MODE: WiFi screen not available");
+        Serial.println("Use serial command: SET_WIFI=SSID,Password");
+#else
         // Switch to WiFi scan screen
         manager->switchScreen(SCREEN_WIFI_SCAN);
+#endif
     }
 }

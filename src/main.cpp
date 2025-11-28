@@ -51,6 +51,7 @@ void processSerialCommand() {
             Serial.println("  SCREENSHOT         - Capture display buffer");
             Serial.println("  STATUS             - Show device status");
             Serial.println("  SET_GEMINI_KEY=xxx - Set Gemini API key");
+            Serial.println("  SET_OPENAI_KEY=xxx - Set OpenAI API key");
             Serial.println("  RESET_CONFIG       - Reset all configuration");
             Serial.println("  HELP               - Show this help");
         } else if (command.startsWith("SET_GEMINI_KEY=")) {
@@ -61,6 +62,19 @@ void processSerialCommand() {
                 globalConfig.setFirstRun(false);
                 if (globalConfig.save()) {
                     Serial.println("✓ Gemini API key saved successfully!");
+                } else {
+                    Serial.println("✗ Failed to save API key");
+                }
+            } else {
+                Serial.println("✗ Invalid API key (empty)");
+            }
+        } else if (command.startsWith("SET_OPENAI_KEY=")) {
+            String key = command.substring(15);
+            key.trim();
+            if (key.length() > 0) {
+                globalConfig.setOpenAIApiKey(key);
+                if (globalConfig.save()) {
+                    Serial.println("✓ OpenAI API key saved successfully!");
                 } else {
                     Serial.println("✗ Failed to save API key");
                 }
@@ -139,13 +153,26 @@ void setup() {
             Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
             screenManager->switchScreen(SCREEN_DASHBOARD);
         } else {
+#ifdef SINGLE_SCREEN_MODE
+            Serial.println("\n✗ WiFi connection failed!");
+            Serial.println("SINGLE_SCREEN_MODE: Staying on dashboard (configure WiFi via serial)");
+            screenManager->switchScreen(SCREEN_DASHBOARD);
+#else
             Serial.println("\n✗ WiFi connection failed, showing scan screen");
             screenManager->switchScreen(SCREEN_WIFI_SCAN);
+#endif
         }
     } else {
+#ifdef SINGLE_SCREEN_MODE
+        Serial.println("No stored WiFi credentials!");
+        Serial.println("SINGLE_SCREEN_MODE: Use serial commands to configure WiFi");
+        Serial.println("Example: SET_WIFI=YourSSID,YourPassword");
+        screenManager->switchScreen(SCREEN_DASHBOARD);
+#else
         // No stored WiFi, show scan screen
         Serial.println("No stored WiFi credentials, showing scan screen...");
         screenManager->switchScreen(SCREEN_WIFI_SCAN);
+#endif
     }
 }
 

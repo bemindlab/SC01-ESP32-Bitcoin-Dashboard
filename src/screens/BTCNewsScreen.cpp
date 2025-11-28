@@ -12,6 +12,9 @@ void BTCNewsScreen::init(ScreenManager* mgr) {
     animationFrame = 0;
     errorMessage = "";
 
+    // Initialize touch feedback
+    feedback.init(manager->getLCD());
+
     // Clear screen
     LGFX* lcd = manager->getLCD();
     lcd->fillScreen(COLOR_BG);
@@ -20,10 +23,24 @@ void BTCNewsScreen::init(ScreenManager* mgr) {
     drawHeader();
     drawEmptyState();
 
+    // Register touch feedback for buttons
+    backButtonFeedbackId = feedback.registerIcon(
+        BACK_BTN_X, BACK_BTN_Y, BACK_BTN_SIZE,
+        COLOR_HEADER_BG, COLOR_BTC_ORANGE, 200
+    );
+
+    refreshButtonFeedbackId = feedback.registerIcon(
+        REFRESH_BTN_X, REFRESH_BTN_Y, REFRESH_BTN_SIZE,
+        COLOR_HEADER_BG, COLOR_BTC_ORANGE, 200
+    );
+
     Serial.println("BTC News Screen initialized");
 }
 
 void BTCNewsScreen::update() {
+    // Update touch feedback animations (non-blocking)
+    feedback.update();
+
     LGFX* lcd = manager->getLCD();
 
     if (isLoading) {
@@ -43,6 +60,10 @@ void BTCNewsScreen::handleTouch(int16_t x, int16_t y) {
     if (x >= BACK_BTN_X && x <= BACK_BTN_X + BACK_BTN_SIZE &&
         y >= BACK_BTN_Y && y <= BACK_BTN_Y + BACK_BTN_SIZE) {
         Serial.println("Back button tapped - returning to dashboard");
+
+        // Visual feedback - non-blocking flash
+        feedback.flash(backButtonFeedbackId);
+
         manager->switchScreen(SCREEN_DASHBOARD);
         return;
     }
@@ -52,6 +73,10 @@ void BTCNewsScreen::handleTouch(int16_t x, int16_t y) {
         y >= REFRESH_BTN_Y && y <= REFRESH_BTN_Y + REFRESH_BTN_SIZE) {
         if (!isLoading) {
             Serial.println("Refresh button tapped");
+
+            // Visual feedback - non-blocking flash
+            feedback.flash(refreshButtonFeedbackId);
+
             refreshNews();
         }
         return;

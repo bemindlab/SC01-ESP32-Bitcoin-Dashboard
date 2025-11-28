@@ -1,0 +1,30 @@
+# API Keys and WiFi Configuration Template
+# Copy this file to .tmp/keys.txt and add your actual credentials
+#
+# Usage: make patch-keys
+#
+# This file is ignored by git for security
+# NEVER commit actual API keys or WiFi passwords to version control
+
+# WiFi Credentials (required for connectivity)
+# Format: SET_WIFI=SSID,PASSWORD
+# Note: ESP32-S3 only supports 2.4GHz WiFi networks
+SET_WIFI=YourNetworkSSID,YourNetworkPassword
+
+# Gemini API Key (optional - required for BTC News feature)
+# Get your key at: https://makersuite.google.com/app/apikey
+GEMINI_KEY=AIzaSyYourActualGeminiKeyHere
+
+# OpenAI API Key (optional - required for Trading Suggestions feature)
+# Get your key at: https://platform.openai.com/api-keys
+OPENAI_KEY=sk-proj-YourActualOpenAIKeyHere
+
+# Notes:
+# - Remove any spaces around the = sign
+# - Keys should be on a single line
+# - WiFi credentials are required; API keys are optional
+# - API features won't work without their respective keys
+# - You can set credentials individually via serial monitor:
+#     SET_WIFI=MyNetwork,MyPassword
+#     SET_GEMINI_KEY=AIza...
+#     SET_OPENAI_KEY=sk-proj-...

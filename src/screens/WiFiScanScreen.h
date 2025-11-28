@@ -2,6 +2,7 @@
 #define WIFI_SCAN_SCREEN_H
 
 #include "ScreenManager.h"
+#include "../ui/TouchFeedbackManager.h"
 #include <WiFi.h>
 
 #define MAX_NETWORKS 10
@@ -17,10 +18,15 @@ struct WiFiNetwork {
 class WiFiScanScreen : public BaseScreen {
 private:
     ScreenManager* manager;
+    TouchFeedbackManager feedback;
     WiFiNetwork networks[MAX_NETWORKS];
     int networkCount;
     int selectedIndex;
     int scrollOffset;
+
+    // Touch feedback IDs
+    int refreshButtonFeedbackId;
+    int networkFeedbackIds[MAX_NETWORKS];
 
     // Colors
     const uint32_t COLOR_BG = 0x000000;

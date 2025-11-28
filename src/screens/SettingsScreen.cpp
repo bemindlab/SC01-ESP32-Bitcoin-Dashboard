@@ -6,6 +6,9 @@ void SettingsScreen::init(ScreenManager* mgr) {
     editingKey = false;
     tempApiKey = globalConfig.getGeminiApiKey();
 
+    // Initialize touch feedback
+    feedback.init(manager->getLCD());
+
     // Clear screen
     LGFX* lcd = manager->getLCD();
     lcd->fillScreen(COLOR_BG);
@@ -14,10 +17,30 @@ void SettingsScreen::init(ScreenManager* mgr) {
     drawHeader();
     drawOptions();
 
+    // Register back button feedback
+    backButtonFeedbackId = feedback.registerIcon(
+        BACK_BTN_X, BACK_BTN_Y, 30,
+        COLOR_HEADER_BG, COLOR_BTC_ORANGE, 200
+    );
+
+    // Register option list items
+    int startY = HEADER_HEIGHT + OPTION_PADDING;
+    for (int i = 0; i < OPTION_COUNT; i++) {
+        int y = startY + (i * (OPTION_HEIGHT + OPTION_PADDING));
+        optionFeedbackIds[i] = feedback.registerListItem(
+            OPTION_PADDING, y,
+            480 - (OPTION_PADDING * 2), OPTION_HEIGHT,
+            0x1A1A1A, 0x0066FF, COLOR_BTC_ORANGE
+        );
+    }
+
     Serial.println("Settings Screen initialized");
 }
 
 void SettingsScreen::update() {
+    // Update touch feedback animations (non-blocking)
+    feedback.update();
+
     // Settings screen is mostly static, updated on touch
 }
 
@@ -28,6 +51,10 @@ void SettingsScreen::handleTouch(int16_t x, int16_t y) {
     if (x >= BACK_BTN_X && x <= BACK_BTN_X + 30 &&
         y >= BACK_BTN_Y && y <= BACK_BTN_Y + 30) {
         Serial.println("Back button tapped - returning to dashboard");
+
+        // Visual feedback - non-blocking flash
+        feedback.flash(backButtonFeedbackId);
+
         manager->switchScreen(SCREEN_DASHBOARD);
         return;
     }
@@ -46,6 +73,12 @@ void SettingsScreen::handleTouch(int16_t x, int16_t y) {
 
         if (y >= optionY && y <= optionY + OPTION_HEIGHT) {
             selectedOption = i;
+
+            // Visual feedback - highlight selected option
+            feedback.onTouchDown(optionFeedbackIds[i]);
+            delay(100);  // Brief delay to show selection
+            feedback.onTouchUp(optionFeedbackIds[i]);
+
             handleOptionSelect(i);
             break;
         }
@@ -63,8 +96,13 @@ void SettingsScreen::handleOptionSelect(int option) {
 
         case OPTION_WIFI_SETTINGS:
             Serial.println("WiFi Settings selected");
+#ifdef SINGLE_SCREEN_MODE
+            Serial.println("SINGLE_SCREEN_MODE: WiFi screen not available");
+            Serial.println("Use serial command: SET_WIFI=SSID,Password");
+#else
             // Navigate to WiFi scan screen
             manager->switchScreen(SCREEN_WIFI_SCAN);
+#endif
             break;
 
         case OPTION_INTERVALS:

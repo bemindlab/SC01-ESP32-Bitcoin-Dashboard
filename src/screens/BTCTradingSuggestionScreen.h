@@ -1,29 +1,30 @@
-#ifndef BTC_NEWS_SCREEN_H
-#define BTC_NEWS_SCREEN_H
+#ifndef BTC_TRADING_SUGGESTION_SCREEN_H
+#define BTC_TRADING_SUGGESTION_SCREEN_H
 
 #include "ScreenManager.h"
 #include "BTCDashboardScreen.h"
-#include "../api/GeminiClient.h"
+#include "../api/OpenAIClient.h"
 #include "../ui/TouchFeedbackManager.h"
 
 // UI Configuration
-#define NEWS_SCROLL_SPEED 3           // Pixels per scroll step
-#define NEWS_MAX_SCROLL_LINES 100     // Maximum lines to render
-#define NEWS_LINE_HEIGHT 20           // Pixels per line
-#define NEWS_PADDING 10               // Screen padding
+#define TRADING_SCROLL_SPEED 3
+#define TRADING_MAX_SCROLL_LINES 100
+#define TRADING_LINE_HEIGHT 20
+#define TRADING_PADDING 10
 
-class BTCNewsScreen : public BaseScreen {
+class BTCTradingSuggestionScreen : public BaseScreen {
 private:
     ScreenManager* manager;
-    GeminiClient* geminiClient;
+    OpenAIClient* openaiClient;
     BTCData currentBTCData;
+    TradingSuggestion suggestion;
     TouchFeedbackManager feedback;
 
-    // News content
-    String newsText;
-    bool hasNews;
+    // State
+    bool hasSuggestion;
     bool isLoading;
     String errorMessage;
+    unsigned long lastUpdate;
 
     // Scrolling
     int scrollOffset;
@@ -31,9 +32,8 @@ private:
     int touchStartY;
     bool isDragging;
 
-    // Touch feedback IDs
-    int backButtonFeedbackId;
-    int refreshButtonFeedbackId;
+    // Update interval (5 minutes)
+    static const unsigned long UPDATE_INTERVAL = 300000;
 
     // Colors
     static const uint32_t COLOR_BG = 0x000000;
@@ -44,7 +44,14 @@ private:
     static const uint32_t COLOR_BTC_ORANGE = 0xFF9500;
     static const uint32_t COLOR_LOADING = 0xFFBF00;
     static const uint32_t COLOR_ERROR = 0xFF3333;
-    static const uint32_t COLOR_SUCCESS = 0x00FF00;
+
+    // Signal colors
+    static const uint32_t COLOR_STRONG_BUY = 0x00FF00;
+    static const uint32_t COLOR_BUY = 0x88FF88;
+    static const uint32_t COLOR_HOLD = 0xFFFF00;
+    static const uint32_t COLOR_SELL = 0xFF8888;
+    static const uint32_t COLOR_STRONG_SELL = 0xFF0000;
+    static const uint32_t COLOR_UNCERTAIN = 0xCCCCCC;
 
     // UI Layout
     static const int HEADER_HEIGHT = 40;
@@ -55,21 +62,28 @@ private:
     static const int BACK_BTN_Y = 5;
     static const int BACK_BTN_SIZE = 30;
 
+    // Touch feedback IDs
+    int backButtonFeedbackId;
+    int refreshButtonFeedbackId;
+
     // UI Methods
     void drawHeader();
     void drawRefreshButton();
     void drawBackButton();
+    void drawMarketSummary();
+    void drawSignalBadge();
+    void drawRecommendation();
     void drawLoadingAnimation();
-    void drawNewsContent();
     void drawEmptyState();
     void drawErrorState();
+    void drawDisclaimer();
     void calculateMaxScroll();
 
-    // Word wrapping helper
-    void wrapText(const String& text, int maxWidth, int fontSize);
-
-    // Refresh functionality
-    void refreshNews();
+    // Data methods
+    void refreshSuggestion();
+    uint32_t getSignalColor(TradingSignal signal);
+    const char* getSignalText(TradingSignal signal);
+    const char* getSignalIcon(TradingSignal signal);
 
     // Animation frame counter
     int animationFrame;

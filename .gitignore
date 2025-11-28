@@ -36,3 +36,7 @@ settings_export*.json
 # Personal configuration (if someone adds hardcoded keys)
 src/api/GeminiClient_personal.h
 src/Config_personal.h
+
+# Keys
+configs/*keys.txt
+.configs

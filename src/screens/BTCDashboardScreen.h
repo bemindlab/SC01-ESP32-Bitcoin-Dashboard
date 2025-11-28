@@ -2,6 +2,7 @@
 #define BTC_DASHBOARD_SCREEN_H
 
 #include "ScreenManager.h"
+#include "../ui/TouchFeedbackManager.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -36,10 +37,14 @@ class BTCDashboardScreen : public BaseScreen {
 private:
     ScreenManager* manager;
     BTCData btcData;
+    TouchFeedbackManager feedback;
 
     unsigned long lastPriceUpdate;
     unsigned long lastBlockUpdate;
     unsigned long lastMempoolUpdate;
+
+    int wifiIconFeedbackId;
+    int settingsIconFeedbackId;
 
     // Colors
     static const uint32_t COLOR_BG = 0x000000;

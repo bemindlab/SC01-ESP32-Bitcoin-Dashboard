@@ -1,7 +1,7 @@
 # Makefile for Bitcoin Dashboard (ESP32-S3)
 # Provides convenient shortcuts for PlatformIO commands
 
-.PHONY: help build upload monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive
+.PHONY: help build build-single upload upload-single monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive patch-keys install-hooks uninstall-hooks
 
 # Default target
 help:
@@ -9,11 +9,13 @@ help:
 	@echo "======================================"
 	@echo ""
 	@echo "Building & Uploading:"
-	@echo "  make build          - Build the project"
-	@echo "  make upload         - Upload firmware to device"
-	@echo "  make all            - Build and upload"
-	@echo "  make monitor        - Open serial monitor"
-	@echo "  make flash          - Upload and monitor"
+	@echo "  make build            - Build project (multi-screen mode)"
+	@echo "  make build-single     - Build project (single screen mode - saves ~51KB)"
+	@echo "  make upload           - Upload firmware to device"
+	@echo "  make upload-single    - Upload single screen firmware"
+	@echo "  make all              - Build and upload"
+	@echo "  make monitor          - Open serial monitor"
+	@echo "  make flash            - Upload and monitor"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test           - Run all tests (native + hardware)"
@@ -31,21 +33,41 @@ help:
 	@echo "  make check                 - Check configuration"
 	@echo "  make screenshot            - Capture device screen to .tmp/"
 	@echo "  make screenshot-interactive - Open serial monitor for manual commands"
+	@echo "  make patch-keys            - Upload firmware and patch API keys from .tmp/keys.txt"
+	@echo ""
+	@echo "Git Hooks:"
+	@echo "  make install-hooks         - Install pre-commit and pre-push hooks"
+	@echo "  make uninstall-hooks       - Remove git hooks"
 	@echo ""
 
-# Build the project
+# Build the project (multi-screen mode)
 build:
-	@echo "Building project..."
+	@echo "Building project (multi-screen mode)..."
 	python3 -m platformio run
 
-# Upload firmware to device
+# Build single screen mode (dashboard only)
+build-single:
+	@echo "Building project (single screen mode - dashboard only)..."
+	@echo "Saves ~51KB flash compared to multi-screen mode"
+	python3 -m platformio run -e sc01_plus_single
+
+# Upload firmware to device (multi-screen)
 upload:
-	@echo "Uploading to device..."
+	@echo "Uploading to device (multi-screen mode)..."
 	python3 -m platformio run --target upload
 
-# Build and upload
+# Upload single screen firmware
+upload-single:
+	@echo "Uploading to device (single screen mode)..."
+	python3 -m platformio run -e sc01_plus_single --target upload
+
+# Build and upload (multi-screen)
 all: build upload
 	@echo "Build and upload complete!"
+
+# Build and upload single screen
+all-single: build-single upload-single
+	@echo "Single screen build and upload complete!"
 
 # Open serial monitor
 monitor:
@@ -130,3 +152,49 @@ screenshot-interactive:
 	@echo "Opening serial monitor..."
 	@echo "Type 'SCREENSHOT' to capture, or Ctrl+C to exit"
 	@python3 -m platformio device monitor -b 115200
+
+# Patch API keys from file
+patch-keys:
+	@echo "Patching API keys from configs/keys.txt..."
+	@if [ ! -f ./configs/keys.txt ]; then \
+		echo "Error: ./configs/keys.txt not found!"; \
+		echo ""; \
+		echo "Create this file with your API keys:"; \
+		echo "  GEMINI_KEY=AIza..."; \
+		echo "  OPENAI_KEY=sk-proj-..."; \
+		echo ""; \
+		echo "See .configs/keys.txt.template for format"; \
+		exit 1; \
+	fi
+	@echo "Uploading firmware..."
+	@make upload
+	@echo ""
+	@echo "Sending API keys to device..."
+	@python3 scripts/send_keys.py /dev/cu.usbmodem1101 .tmp/keys.txt
+
+# Install git hooks
+install-hooks:
+	@echo "Installing git hooks..."
+	@if [ ! -d .git ]; then \
+		echo "Error: Not a git repository!"; \
+		exit 1; \
+	fi
+	@mkdir -p .git/hooks
+	@cp .githooks/pre-commit .git/hooks/pre-commit
+	@cp .githooks/pre-push .git/hooks/pre-push
+	@chmod +x .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-push
+	@echo "✅ Git hooks installed successfully!"
+	@echo ""
+	@echo "Hooks installed:"
+	@echo "  - pre-commit: Code quality checks"
+	@echo "  - pre-push: Test and build validation"
+	@echo ""
+
+# Uninstall git hooks
+uninstall-hooks:
+	@echo "Uninstalling git hooks..."
+	@rm -f .git/hooks/pre-commit
+	@rm -f .git/hooks/pre-push
+	@echo "✅ Git hooks removed successfully!"
+	@echo ""

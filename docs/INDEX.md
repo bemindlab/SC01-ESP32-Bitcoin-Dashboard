@@ -215,27 +215,55 @@ make upload
 
 | # | Document | Status | Complexity | Description |
 |---|----------|--------|------------|-------------|
-| 9 | [btc-news-feature-plan.md](./features/btc-news-feature-plan.md) | Proposed | Medium | Bitcoin news feed integration planning |
+| 9 | [btc-news-feature-plan.md](./features/btc-news-feature-plan.md) | Implemented | Medium | Bitcoin news feed with Gemini AI |
+| 10 | [btc-trading-suggestion-plan.md](./features/btc-trading-suggestion-plan.md) | Planning | High | AI-powered trading suggestions with OpenAI GPT |
+| 11 | [navigation-diagram.md](./features/navigation-diagram.md) | Planning | Low | Circular swipe carousel navigation map |
+
+**Implemented Features:**
+
+**Bitcoin News Feed (SCREEN_BTC_NEWS):**
+- ✅ Gemini AI-powered news generation
+- ✅ Swipe navigation from Dashboard
+- ✅ Real-time market context integration
+- ✅ Secure API key storage (NVRAM)
+- ✅ Touch-based refresh
 
 **Planned Features:**
 
-**Bitcoin News Feed:**
-- Live Bitcoin news from multiple sources
-- Scrollable news list with touch interface
-- News caching for offline viewing
-- Configurable update intervals
-- News category filtering
-- Source selection preferences
-- Read/unread status tracking
+**Bitcoin Trading Suggestions (SCREEN_TRADING_SUGGESTION):**
+- 📋 OpenAI GPT-4/GPT-3.5 integration
+- 📋 Real-time trading signal generation
+- 📋 AI confidence scoring (0-100%)
+- 📋 Actionable recommendations with targets/stop-loss
+- 📋 **Circular swipe carousel:** Dashboard → Trading → News → Dashboard (infinite loop)
+- 📋 Swipe left/right to navigate between all screens
+- 📋 5-minute auto-refresh (configurable)
+- 📋 Trading signal types: STRONG_BUY, BUY, HOLD, SELL, STRONG_SELL
+- 📋 Secure OpenAI API key storage
+- 📋 Serial command: `SET_OPENAI_KEY=sk-proj-...`
 
-**Implementation Considerations:**
-- API selection (CoinDesk, CoinTelegraph, Bitcoin Magazine)
-- Memory constraints (ESP32-S3 has limited RAM)
-- Network bandwidth (avoid excessive API calls)
-- UI layout (news cards vs. list view)
-- Touch scrolling performance
-- News content truncation
-- Update notification system
+**Navigation Pattern:**
+```
+Swipe Left (←):  Dashboard → News → Trading → Dashboard
+Swipe Right (→): Dashboard → Trading → News → Dashboard
+(Infinite circular loop - never ends!)
+```
+
+**Implementation Timeline:**
+- Phase 1-2: OpenAI Client & Data Structures (Week 1)
+- Phase 3-4: UI & Integration (Week 2)
+- Phase 5-6: Testing & Deployment (Week 3)
+- **Total:** 3 weeks
+
+**Cost Analysis:**
+- GPT-4 Turbo: $103.80/month (5-min refresh)
+- GPT-3.5 Turbo: $5.18/month (recommended)
+- Manual-only mode: Near zero cost
+
+**Memory Impact:**
+- Additional RAM: +7KB (~16.8% total)
+- Additional Flash: +25KB (~15.9% total)
+- ✅ Sufficient memory available
 
 ---
 
@@ -301,7 +329,7 @@ make update         # Update PlatformIO & libraries
 - **Design Documents:** 2 (UI improvements, news feature)
 
 ### By Status
-- ✅ **Implemented/Complete:** 4 documents
+- ✅ **Implemented/Complete:** 5 documents
 - ⏳ **In Progress:** 2 documents
 - 📋 **Planned/Proposed:** 2 documents
 - 📖 **Reference:** 3 documents
