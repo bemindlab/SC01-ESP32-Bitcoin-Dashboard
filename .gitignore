@@ -19,6 +19,20 @@
 .DS_Store
 Thumbs.db
 
-# Credentials (if you add config files later)
+# Credentials and sensitive data
 secrets.h
 credentials.h
+config.ini
+.env
+*.key
+*.pem
+*.crt
+api_keys.txt
+
+# Configuration backups (may contain keys)
+config_backup*.txt
+settings_export*.json
+
+# Personal configuration (if someone adds hardcoded keys)
+src/api/GeminiClient_personal.h
+src/Config_personal.h

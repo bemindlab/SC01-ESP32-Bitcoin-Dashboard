@@ -1,7 +1,7 @@
 # Makefile for Bitcoin Dashboard (ESP32-S3)
 # Provides convenient shortcuts for PlatformIO commands
 
-.PHONY: help build upload monitor clean test devices all update screenshot
+.PHONY: help build upload monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive
 
 # Default target
 help:
@@ -15,16 +15,22 @@ help:
 	@echo "  make monitor        - Open serial monitor"
 	@echo "  make flash          - Upload and monitor"
 	@echo ""
+	@echo "Testing:"
+	@echo "  make test           - Run all tests (native + hardware)"
+	@echo "  make test-native    - Run native tests only (desktop)"
+	@echo "  make test-hardware  - Run hardware tests (on device)"
+	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Clean build files"
 	@echo "  make devices        - List connected devices"
 	@echo "  make update         - Update PlatformIO and libraries"
 	@echo ""
 	@echo "Development:"
-	@echo "  make debug-monitor  - Monitor with exception decoder"
-	@echo "  make erase          - Erase flash memory"
-	@echo "  make check          - Check configuration"
-	@echo "  make screenshot     - Capture device screen to .tmp/"
+	@echo "  make debug-monitor         - Monitor with exception decoder"
+	@echo "  make erase                 - Erase flash memory"
+	@echo "  make check                 - Check configuration"
+	@echo "  make screenshot            - Capture device screen to .tmp/"
+	@echo "  make screenshot-interactive - Open serial monitor for manual commands"
 	@echo ""
 
 # Build the project
@@ -97,18 +103,30 @@ info:
 	@echo "Platform information:"
 	python3 -m platformio platform show espressif32
 
+# Run all tests
+test: test-native
+	@echo "All tests complete!"
+
+# Run native tests (desktop)
+test-native:
+	@echo "Running native unit tests..."
+	python3 -m platformio test -e native
+
+# Run hardware tests (on device)
+test-hardware:
+	@echo "Running hardware integration tests..."
+	@echo "Make sure device is connected!"
+	python3 -m platformio test -e test_sc01_plus --upload-port /dev/cu.usbmodem1101
+
 # Capture device screenshot
 screenshot:
-	@echo "Capturing device screen..."
-	@mkdir -p /Users/lps/Solutions/bemind-embeded/btc-dashboard/.tmp
-	@TIMESTAMP=$$(date +%Y%m%d_%H%M%S); \
-	echo "Screenshot will be saved to: .tmp/screenshot_$$TIMESTAMP.raw"; \
-	echo ""; \
-	echo "Note: Screen capture requires custom firmware support."; \
-	echo "To enable screenshots:"; \
-	echo "  1. Add screen capture code to src/main.cpp"; \
-	echo "  2. Send display buffer data via Serial when triggered"; \
-	echo "  3. Use this command to save the data"; \
-	echo ""; \
-	echo "For now, you can manually trigger a screen dump via serial commands."; \
-	echo "Output directory: .tmp/"
+	@echo "Capturing device screenshot..."
+	@echo "Make sure firmware is uploaded and device is running!"
+	@echo ""
+	@python3 scripts/capture_screenshot.py /dev/cu.usbmodem1101
+
+# Interactive screenshot (opens serial monitor first)
+screenshot-interactive:
+	@echo "Opening serial monitor..."
+	@echo "Type 'SCREENSHOT' to capture, or Ctrl+C to exit"
+	@python3 -m platformio device monitor -b 115200

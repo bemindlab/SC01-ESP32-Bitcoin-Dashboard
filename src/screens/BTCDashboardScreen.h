@@ -68,6 +68,11 @@ private:
     static const int WIFI_ICON_Y = 5;
     static const int WIFI_ICON_SIZE = 30;
 
+    // Settings icon button position (next to WiFi icon)
+    static const int SETTINGS_ICON_X = 400;
+    static const int SETTINGS_ICON_Y = 5;
+    static const int SETTINGS_ICON_SIZE = 30;
+
     // API methods
     bool fetchPrice();
     bool fetchBlocks();
@@ -78,6 +83,7 @@ private:
     void drawCard(int x, int y, int w, int h, uint32_t borderColor,
                   const char* title, const char* content, uint32_t contentColor);
     void drawWiFiIcon();
+    void drawSettingsIcon();
     void setupUI();
     void updateUI();
 
@@ -85,6 +91,9 @@ public:
     void init(ScreenManager* mgr) override;
     void update() override;
     void handleTouch(int16_t x, int16_t y) override;
+
+    // Getter for BTC data (used when navigating to News screen)
+    BTCData getBTCData() const { return btcData; }
 };
 
 #endif

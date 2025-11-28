@@ -170,6 +170,28 @@ void BTCDashboardScreen::drawWiFiIcon() {
     lcd->drawArc(cx, cy, 13, 11, 200, 340, COLOR_TEXT_WHITE);
 }
 
+void BTCDashboardScreen::drawSettingsIcon() {
+    LGFX* lcd = manager->getLCD();
+
+    // Draw Settings icon button with border
+    lcd->drawRoundRect(SETTINGS_ICON_X, SETTINGS_ICON_Y, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE, 5, COLOR_TEXT_LIGHT);
+    lcd->drawRoundRect(SETTINGS_ICON_X + 1, SETTINGS_ICON_Y + 1, SETTINGS_ICON_SIZE - 2, SETTINGS_ICON_SIZE - 2, 4, COLOR_TEXT_LIGHT);
+
+    // Draw gear/cog symbol (simplified)
+    int cx = SETTINGS_ICON_X + SETTINGS_ICON_SIZE / 2;
+    int cy = SETTINGS_ICON_Y + SETTINGS_ICON_SIZE / 2;
+
+    // Center circle
+    lcd->fillCircle(cx, cy, 5, COLOR_TEXT_WHITE);
+    lcd->fillCircle(cx, cy, 3, COLOR_BG);  // Inner hole
+
+    // Gear teeth (simplified as rectangles)
+    lcd->fillRect(cx - 2, SETTINGS_ICON_Y + 3, 4, 4, COLOR_TEXT_WHITE);   // Top
+    lcd->fillRect(cx - 2, SETTINGS_ICON_Y + 23, 4, 4, COLOR_TEXT_WHITE);  // Bottom
+    lcd->fillRect(SETTINGS_ICON_X + 3, cy - 2, 4, 4, COLOR_TEXT_WHITE);   // Left
+    lcd->fillRect(SETTINGS_ICON_X + 23, cy - 2, 4, 4, COLOR_TEXT_WHITE);  // Right
+}
+
 void BTCDashboardScreen::setupUI() {
     LGFX* lcd = manager->getLCD();
     lcd->fillScreen(COLOR_BG);
@@ -182,6 +204,9 @@ void BTCDashboardScreen::setupUI() {
 
     // Draw WiFi settings icon
     drawWiFiIcon();
+
+    // Draw Settings icon
+    drawSettingsIcon();
 
     // Draw initial cards
     drawCard(CARD_MARGIN, 45, CARD_WIDTH, CARD_HEIGHT,
@@ -196,11 +221,15 @@ void BTCDashboardScreen::setupUI() {
     drawCard(480 - CARD_WIDTH - CARD_MARGIN, 320 - CARD_HEIGHT - 25, CARD_WIDTH, CARD_HEIGHT,
              COLOR_BORDER_GREEN, "FAST FEE", "...", COLOR_FEE_ORANGE);
 
-    // Status bar
+    // Status bar with swipe hint
     lcd->setTextColor(COLOR_TEXT_DIM, COLOR_BG);
     lcd->setTextSize(1);
     lcd->setCursor(10, 320 - 15);
     lcd->print("Loading data...");
+
+    // Swipe hint on right side
+    lcd->setCursor(340, 320 - 15);
+    lcd->print("Swipe for News >");
 }
 
 void BTCDashboardScreen::updateUI() {
@@ -262,9 +291,17 @@ void BTCDashboardScreen::updateUI() {
 
     lcd->setTextColor(COLOR_TEXT_DIM, COLOR_BG);
     lcd->setCursor(70, 320 - 18);
-    lcd->printf("mempool.space | %d.%d.%d.%d",
-               WiFi.localIP()[0], WiFi.localIP()[1],
-               WiFi.localIP()[2], WiFi.localIP()[3]);
+    lcd->printf("mempool.space");
+
+    // Swipe hint on right side
+    lcd->setTextSize(1);
+    lcd->setCursor(340, 320 - 15);
+    lcd->print("Swipe for News >");
+
+    // Show IP address if needed (debug)
+    // lcd->printf(" | %d.%d.%d.%d",
+    //            WiFi.localIP()[0], WiFi.localIP()[1],
+    //            WiFi.localIP()[2], WiFi.localIP()[3]);
 }
 
 void BTCDashboardScreen::update() {
@@ -302,6 +339,22 @@ void BTCDashboardScreen::update() {
 
 void BTCDashboardScreen::handleTouch(int16_t x, int16_t y) {
     Serial.printf("Dashboard touch at: %d, %d\n", x, y);
+
+    // Check if Settings icon was tapped
+    if (x >= SETTINGS_ICON_X && x <= (SETTINGS_ICON_X + SETTINGS_ICON_SIZE) &&
+        y >= SETTINGS_ICON_Y && y <= (SETTINGS_ICON_Y + SETTINGS_ICON_SIZE)) {
+
+        Serial.println("Settings icon tapped - switching to Settings");
+
+        // Visual feedback - highlight icon
+        LGFX* lcd = manager->getLCD();
+        lcd->fillRoundRect(SETTINGS_ICON_X, SETTINGS_ICON_Y, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE, 5, COLOR_BTC_ORANGE);
+        delay(200);
+
+        // Switch to Settings screen
+        manager->switchScreen(SCREEN_SETTINGS);
+        return;
+    }
 
     // Check if WiFi icon was tapped
     if (x >= WIFI_ICON_X && x <= (WIFI_ICON_X + WIFI_ICON_SIZE) &&
