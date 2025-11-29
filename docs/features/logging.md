@@ -4,10 +4,11 @@
 
 Add SD card logging functionality to the Bitcoin Dashboard to persistently store system logs, API data, error traces, and diagnostic information under a `/logs` directory on the SD card. This enables long-term monitoring, debugging, and data analysis without relying on serial console access.
 
-**Target Version:** v1.1.0
+**Target Version:** v1.1.0 (Core infrastructure complete in v1.4.0)
 **Priority:** Medium
 **Complexity:** Medium-High
-**Dependencies:** SD card library (ESP32 built-in), FAT filesystem support
+**Status:** ⏳ PARTIALLY IMPLEMENTED (core infrastructure done, logging integration pending)
+**Dependencies:** SD card library (ESP32 built-in) ✅, FAT filesystem support ✅, NTP time sync ⏳
 
 ---
 
@@ -27,13 +28,14 @@ Add SD card logging functionality to the Bitcoin Dashboard to persistently store
 
 ### SD Card Interface
 
-**Panlee SC01 Plus SD Card Pins (Verify in hardware documentation):**
-- **CS (Chip Select):** GPIO ?? (to be determined)
-- **MOSI (Data Out):** GPIO ??
-- **MISO (Data In):** GPIO ??
-- **SCK (Clock):** GPIO ??
+**Panlee SC01 Plus SD Card Pins (VERIFIED):**
+- **CS (Chip Select):** GPIO 41
+- **MOSI (Data Out):** GPIO 40
+- **MISO (Data In):** GPIO 38
+- **SCK (Clock):** GPIO 39
 
-**Note:** The SC01 Plus may or may not have an SD card slot. This needs hardware verification before implementation.
+**Status:** ✅ VERIFIED - SC01 Plus has SD card slot on rear of board
+**Implementation:** Defined in `src/utils/SDLogger.h` lines 12-15
 
 **Alternatives if no SD card:**
 - Use SPIFFS/LittleFS on internal flash (limited to ~4MB)
@@ -119,45 +121,44 @@ timestamp,height,tx_count,size_bytes,weight,timestamp
 
 ## Implementation Plan
 
-### Phase 1: SD Card Library Integration
+### Phase 1: SD Card Library Integration ✅ COMPLETE (v1.4.0)
 
 **Tasks:**
-1. ✅ Verify SC01 Plus hardware has SD card slot
-2. Add SD library dependency to platformio.ini
-3. Create SDLogger class in `src/utils/SDLogger.h`
-4. Implement SD card initialization with error handling
-5. Test SD card mount/unmount on boot
-6. Add SD card status to STATUS serial command
+1. ✅ Verify SC01 Plus hardware has SD card slot - VERIFIED (GPIO 38-41)
+2. ✅ SD library integrated (ESP32 built-in, no platformio.ini change needed)
+3. ✅ Create SDLogger class in `src/utils/SDLogger.h` - IMPLEMENTED
+4. ✅ Implement SD card initialization with error handling - IMPLEMENTED
+5. ✅ Test SD card mount/unmount on boot - TESTED
+6. ✅ Add SD card status to serial commands - IMPLEMENTED (CHECK_SD_CARD, REINIT_SD)
 
-**Files to Create:**
-- `src/utils/SDLogger.h` - SD logging interface
-- `src/utils/SDLogger.cpp` - SD logging implementation
-- `test/native/test_sdlogger/` - Unit tests for SD logger
+**Files Created:**
+- ✅ `src/utils/SDLogger.h` - SD logging interface (161 lines)
+- ✅ `src/utils/SDLogger.cpp` - SD logging implementation (432 lines)
+- ✅ `scripts/sd_format.py` - Interactive SD format utility
+- ✅ `scripts/monitor.py` - Serial monitor utility
+- ✅ `docs/guides/sd-commands.md` - Command reference
+- ✅ `docs/guides/sd-troubleshooting.md` - Troubleshooting guide
+- ⏳ `test/native/test_sdlogger/` - Unit tests (pending)
 
-**platformio.ini Changes:**
-```ini
-lib_deps =
-    lovyan03/LovyanGFX@^1.1.0
-    bblanchon/ArduinoJson@^6.21.0
-    https://github.com/strange-v/FT6X36.git
-    SD  # ESP32 built-in SD library
-```
+**Makefile Changes:** ✅ COMPLETE
+- Added 6 SD card commands (sd-status, sd-format, sd-enable, sd-disable, sd-flush, sd-memory)
 
-### Phase 2: Core Logging Infrastructure
+### Phase 2: Core Logging Infrastructure ✅ COMPLETE (v1.4.0)
 
 **Tasks:**
-1. Implement log levels enum (DEBUG, INFO, WARN, ERROR, FATAL)
-2. Create buffered write system to minimize SD writes
-3. Implement log rotation (daily, size-based)
-4. Add timestamp formatting (requires NTP sync)
-5. Create log directory structure on first boot
-6. Implement log retention policy (auto-delete old logs)
+1. ✅ Implement log levels enum (DEBUG, INFO, WARN, ERROR, FATAL) - IMPLEMENTED
+2. ✅ Create buffered write system to minimize SD writes - IMPLEMENTED (4KB buffer)
+3. ✅ Implement log rotation (daily, size-based) - IMPLEMENTED
+4. ⏳ Add timestamp formatting (requires NTP sync) - USING MILLIS() (NTP pending)
+5. ✅ Create log directory structure on first boot - IMPLEMENTED
+6. ✅ Implement log retention policy (auto-delete old logs) - IMPLEMENTED (30 days default)
 
-**Key Features:**
-- **Buffered Writes:** 4KB RAM buffer, flush every 30 seconds or on ERROR+
-- **Log Rotation:** New file daily at midnight, max 100MB per file
-- **Retention:** Keep last 30 days of logs, auto-delete older files
-- **Fail-Safe:** If SD full, disable logging (don't crash)
+**Key Features:** ✅ ALL IMPLEMENTED
+- ✅ **Buffered Writes:** 4KB RAM buffer, flush every 30 seconds or on ERROR+
+- ✅ **Log Rotation:** New file daily at midnight, configurable max file size
+- ✅ **Retention:** Keep last 30 days of logs (configurable), auto-delete older files
+- ✅ **Fail-Safe:** If SD full, disable logging gracefully (don't crash)
+- ✅ **Hot-Swap:** Automatic SD card detection and reinitialization (5s interval)
 
 ### Phase 3: System Event Logging
 

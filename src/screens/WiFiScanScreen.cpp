@@ -1,4 +1,5 @@
 #include "WiFiScanScreen.h"
+#include "../Config.h"
 
 void WiFiScanScreen::init(ScreenManager* mgr) {
     manager = mgr;
@@ -19,6 +20,50 @@ void WiFiScanScreen::init(ScreenManager* mgr) {
         400, 10, 70, 30,
         COLOR_BG, COLOR_HEADER, 5, 200
     );
+
+    // Try to auto-connect using stored credentials first
+    if (globalConfig.hasWiFiCredentials()) {
+        String ssid = globalConfig.getWiFiSSID();
+        String pass = globalConfig.getWiFiPassword();
+
+        // Show connecting message
+        lcd->setTextColor(COLOR_TEXT, COLOR_BG);
+        lcd->setTextSize(2);
+        lcd->setCursor(80, 120);
+        lcd->print("Connecting to:");
+        lcd->setCursor(80, 150);
+        lcd->setTextColor(COLOR_HEADER, COLOR_BG);
+        lcd->setTextSize(3);
+        lcd->print(ssid.c_str());
+
+        Serial.printf("WiFi Scan Screen: Trying stored credentials for SSID: %s\n", ssid.c_str());
+
+        // Attempt connection
+        WiFi.begin(ssid.c_str(), pass.c_str());
+
+        int attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+            Serial.println("\n✓ WiFi connected! Switching to main screen.");
+            Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
+
+            // Switch to main screen instantly
+            manager->switchScreen(SCREEN_MAIN);
+            return;
+        } else {
+            Serial.printf("\n✗ WiFi connection failed after %d attempts\n", attempts);
+            Serial.println("Showing WiFi scan screen for manual selection...");
+
+            // Clear screen and continue to scan
+            lcd->fillScreen(COLOR_BG);
+            drawHeader();
+        }
+    }
 
     // Show scanning message
     lcd->setTextColor(COLOR_TEXT, COLOR_BG);
@@ -226,8 +271,8 @@ void WiFiScanScreen::handleTouch(int16_t x, int16_t y) {
                 lcd->print("Connected!");
                 delay(1000);
 
-                // Switch to dashboard
-                manager->switchScreen(SCREEN_DASHBOARD);
+                // Switch to main screen
+                manager->switchScreen(SCREEN_MAIN);
             } else {
                 // Show failure
                 lcd->fillRect(0, 260, 480, 60, COLOR_BG);

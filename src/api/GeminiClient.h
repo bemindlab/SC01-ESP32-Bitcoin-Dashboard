@@ -19,8 +19,7 @@
 #define GEMINI_MAX_OUTPUT_TOKENS 1024 // Limit response length
 #define GEMINI_TEMPERATURE 0.7        // Creativity level (0.0-1.0)
 
-// Forward declaration of BTCData struct
-struct BTCData;
+#include "BTCData.h"
 
 class GeminiClient {
 private:
@@ -44,6 +43,12 @@ public:
 
     // Main method to get Bitcoin news/analysis
     bool fetchBitcoinNews(const BTCData& data, String& newsText);
+
+    // Get DCA (Dollar Cost Average) recommendation
+    bool fetchDCARecommendation(const BTCData& data, String& recommendation);
+
+    // Get short-term trading signal (15m-1h timeframe)
+    bool fetchTradingSignal(const BTCData& data, String& signal);
 
     // Generate prompt from Bitcoin data
     String generatePrompt(const BTCData& data);

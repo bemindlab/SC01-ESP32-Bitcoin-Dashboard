@@ -11,20 +11,25 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Dis
 
 ### Core Dashboard
 - 💰 **Live BTC Price** - Real-time updates (USD/EUR) from mempool.space
-- 🧱 **Block Information** - Latest block height and transaction count
-- 📊 **Mempool Statistics** - Pending transactions and mempool size
-- ⛽ **Fee Rates** - Fast/Medium/Slow recommendations (sat/vB)
+- 📈 **24h Change** - Price change tracking
+- 🧱 **Block Height** - Latest block information
+- 📊 **Mempool Count** - Pending transactions
+- ⛽ **Fast Fee** - Current fee rate (sat/vB)
+- 📶 **WiFi Signal** - Network signal strength
 
-### AI-Powered Features
-- 🤖 **Trading Suggestions** - AI-powered analysis using Gemini API
-- 📰 **Bitcoin News** - Curated news with AI summaries (OpenAI)
+### Display Features
+- 📱 **Simple Card Layout** - 6 data cards in 2-column grid
+- 📜 **Vertical Scroll** - Drag to scroll through all cards
+- 🔄 **Screen Rotation** - Tap top-right corner to rotate (0°/90°/180°/270°)
+- 🎨 **High Contrast Colors** - White text on dark cards for easy reading
+- ⚡ **Real-time Updates** - Auto-refresh every 30 seconds
 
 ### System Features
-- 📱 **Multi-Screen Interface** - Dashboard, WiFi, Settings, News, Trading
-- ⚙️ **Configuration System** - NVRAM storage for WiFi, API keys, settings
+- ⚙️ **Configuration System** - NVRAM storage for WiFi credentials
 - 🔄 **Auto-Reconnect** - Automatic WiFi reconnection on network loss
 - 📸 **Screenshot Capture** - Debug via serial screenshot transmission
 - 🔧 **Serial Commands** - Configure device via serial monitor (115200 baud)
+- 🌐 **WiFi Scan** - Touch-based network selection (on first boot)
 
 ## Hardware Requirements
 

@@ -272,15 +272,44 @@ The Bitcoin Dashboard has evolved from a simple price display (v1.0.0-alpha) to 
 - ⏳ ArduinoOTA (planned)
 - ⏳ MQTT client library (planned)
 
-### Phase 5: Advanced Features
+### Phase 5: Telegram Bot Integration & Advanced Features
 
 **Goals:**
 - Add personalized features
-- Enable alerts and notifications
+- Enable alerts and notifications via Telegram
 - Support multiple cryptocurrencies
+- Remote monitoring and control
+
+**Completed Features:**
+- [x] Telegram bot integration plan (v2.1.0 planning) ✅
+  - See docs/features/telegram-bot-integration.md
+  - Price alerts, system notifications
+  - Remote monitoring (/price, /status, etc.)
+  - Remote configuration and control
+  - Screenshot transmission via bot
+  - Daily/weekly reports
 
 **Features to Implement:**
-- [ ] Price alerts (push notifications via Telegram/email)
+- [ ] **Telegram Bot Integration** (v2.1.0 - High Priority)
+  - [ ] Phase 1: Basic Notifications (2 weeks)
+    - [ ] Price threshold alerts (above/below)
+    - [ ] Percentage change alerts (5%, 10%, 20%)
+    - [ ] System notifications (boot, WiFi, errors)
+    - [ ] Daily summary reports
+  - [ ] Phase 2: Remote Monitoring (1 week)
+    - [ ] Query commands (/price, /blocks, /mempool, /fees, /status)
+    - [ ] Screenshot command (/screenshot)
+    - [ ] Scheduled reports (hourly, daily, weekly)
+  - [ ] Phase 3: Remote Control (1 week)
+    - [ ] Configuration commands (set intervals, alerts)
+    - [ ] Device control (restart, refresh, switch screen)
+    - [ ] Brightness control
+  - [ ] Phase 4: Advanced Features (2 weeks)
+    - [ ] Trading signal notifications
+    - [ ] Custom alerts (block milestones, mempool congestion)
+    - [ ] Interactive inline keyboards
+    - [ ] Conversation-based setup
+
 - [ ] Custom address monitoring
 - [ ] Transaction notifications
 - [ ] Multi-currency support (ETH, ADA, etc.)
@@ -292,10 +321,19 @@ The Bitcoin Dashboard has evolved from a simple price display (v1.0.0-alpha) to 
 - [ ] QR code display for receive addresses
 
 **Technical Requirements:**
-- Telegram Bot API integration
+- UniversalTelegramBot library (~30KB flash, ~6KB RAM)
+- TelegramClient class implementation
+- AlertManager class for threshold monitoring
+- NVRAM configuration for bot token and chat ID
+- Command parser for bot commands
+- Serial commands: SET_TELEGRAM_TOKEN, SET_TELEGRAM_CHAT_ID, etc.
 - Additional crypto APIs (CoinGecko, etc.)
 - QR code generation library
 - Multi-page LVGL navigation
+
+**Estimated Timeline:**
+- Telegram Bot v2.1.0: 6 weeks total (4 phases)
+- Target Release: Q4 2025
 
 ### Phase 6: SD Card Logging & Diagnostics
 
@@ -305,24 +343,56 @@ The Bitcoin Dashboard has evolved from a simple price display (v1.0.0-alpha) to 
 - Export historical Bitcoin data
 - Improve crash recovery and diagnostics
 
-**Completed Features:**
-- None yet (planned for v1.1.0)
+**Completed Features (v1.4.0):**
+- [x] **SD Card Library Integration** ✅
+  - ✅ Verified SC01 Plus SD card slot (GPIO 38-41)
+  - ✅ SD library dependency (ESP32 built-in)
+  - ✅ Created SDLogger utility class (`src/utils/SDLogger.h/cpp`)
+  - ✅ SD card initialization and error handling
+  - ✅ Added SD status serial commands (CHECK_SD_CARD, REINIT_SD)
+
+- [x] **Core Logging Infrastructure** ✅
+  - ✅ Implemented log levels (DEBUG, INFO, WARN, ERROR, FATAL)
+  - ✅ Buffered writes (4KB buffer, flush every 30s)
+  - ✅ Log rotation (daily files)
+  - ✅ Directory structure: `/logs/{system,api,data,errors,debug}/`
+  - ✅ Retention policy (configurable, default 30 days)
+  - ⏳ NTP timestamp formatting (using millis() - NTP not yet implemented)
+
+- [x] **Serial Commands** ✅ COMPLETE
+  - ✅ CHECK_SD_CARD - Detailed SD status and diagnostics
+  - ✅ REINIT_SD - Reinitialize SD card (hot-swap support)
+  - ✅ FORMAT_SD_CARD - Format SD card (with confirmation)
+  - ✅ LOG_ENABLE - Enable SD card logging
+  - ✅ LOG_DISABLE - Disable SD card logging
+  - ✅ LOG_FLUSH - Force flush buffer to SD
+  - ✅ LOG_LEVEL - Set log verbosity (DEBUG/INFO/WARN/ERROR/FATAL)
+  - ✅ LOG_MEMORY - Log current memory usage
+
+- [x] **Makefile Commands** ✅ COMPLETE
+  - ✅ make sd-status - Check SD card status
+  - ✅ make sd-format - Format SD card (interactive)
+  - ✅ make sd-enable - Enable logging
+  - ✅ make sd-disable - Disable logging
+  - ✅ make sd-flush - Flush log buffer
+  - ✅ make sd-memory - Log memory usage
+
+- [x] **Helper Scripts** ✅ COMPLETE
+  - ✅ scripts/sd_format.py - Interactive SD format with confirmation
+  - ✅ scripts/monitor.py - Serial monitor utility
+  - ✅ scripts/send_serial_command.py - Generic serial command sender
+
+- [x] **Documentation** ✅ COMPLETE
+  - ✅ docs/guides/sd-commands.md - Complete command reference
+  - ✅ docs/guides/sd-troubleshooting.md - Troubleshooting guide
+  - ⏳ docs/features/logging.md - Needs GPIO pin updates
 
 **Features to Implement:**
-- [ ] **SD Card Library Integration** (High Priority)
-  - Verify SC01 Plus SD card slot availability
-  - Add SD library dependency
-  - Create SDLogger utility class (`src/utils/SDLogger.h/cpp`)
-  - Test SD card initialization and error handling
-  - Add SD status to Settings screen and STATUS command
-
-- [ ] **Core Logging Infrastructure**
-  - Implement log levels (DEBUG, INFO, WARN, ERROR, FATAL)
-  - Buffered writes (4KB buffer, flush every 30s or on ERROR+)
-  - Log rotation (daily files, size-based limits)
-  - NTP timestamp formatting (requires NTP sync)
-  - Directory structure: `/logs/{system,api,data,errors,debug}/`
-  - Retention policy (auto-delete logs >30 days)
+- [ ] **NTP Time Synchronization** (Required for accurate timestamps)
+  - Add NTPClient library
+  - Configure NTP servers (pool.ntp.org)
+  - Timezone selection and configuration
+  - Replace millis() timestamps with real date/time
 
 - [ ] **System Event Logging**
   - Boot sequence logs (WiFi, display, config)
@@ -357,7 +427,6 @@ The Bitcoin Dashboard has evolved from a simple price display (v1.0.0-alpha) to 
   - SD logging enable/disable setting
   - Log level configuration (DEBUG/INFO/WARN/ERROR)
   - SD card status indicator in Settings
-  - Serial commands: `SET_LOG_LEVEL`, `SD_STATUS`, `FLUSH_LOGS`, `CLEAR_LOGS`, `EXPORT_LOGS`
   - "Export Logs" function via serial
 
 - [ ] **Testing & Validation**
@@ -370,18 +439,23 @@ The Bitcoin Dashboard has evolved from a simple price display (v1.0.0-alpha) to 
   - 7-day stability test with logging enabled
 
 **Technical Requirements:**
-- ⏳ SD library (ESP32 built-in)
-- ⏳ FAT filesystem support (ESP32 built-in)
-- ⏳ NTP time sync (for accurate timestamps) - not yet implemented
-- ⏳ Hardware verification: SD card slot on SC01 Plus
+- ✅ SD library (ESP32 built-in) - IMPLEMENTED
+- ✅ FAT filesystem support (ESP32 built-in) - IMPLEMENTED
+- ✅ Hardware verification: SD card slot on SC01 Plus - VERIFIED (GPIO 38-41)
+- ⏳ NTP time sync (for accurate timestamps) - NOT YET IMPLEMENTED
 
 **Success Criteria:**
-- SD card initialization on boot
-- System/API/error logs written without UI lag
-- Daily log rotation working
-- 30-day retention enforced
-- <1% CPU overhead
-- No crashes on SD errors (graceful degradation)
+- ✅ SD card initialization on boot - WORKING
+- ✅ Serial commands functional - COMPLETE (8 commands)
+- ✅ Makefile automation - COMPLETE (6 commands)
+- ✅ Helper scripts created - COMPLETE (3 scripts)
+- ✅ Documentation complete - GUIDES READY
+- ✅ Graceful degradation on SD errors - IMPLEMENTED
+- ✅ Hot-swap detection - IMPLEMENTED (5s check interval)
+- ⏳ System/API/error logs written without UI lag - PENDING
+- ⏳ Daily log rotation working - PENDING
+- ⏳ 30-day retention enforced - PENDING
+- ⏳ <1% CPU overhead - NEEDS TESTING
 
 **See Also:** `/docs/features/sd-card-logging-plan.md` for detailed specification
 
@@ -710,11 +784,18 @@ pio run -e sc01_plus_single --target upload
   - Web configuration interface
   - MQTT monitoring support
 
-- **v2.1.0** (Q4 2025) - Advanced features:
-  - Price alerts (Telegram/email)
+- **v2.1.0** (Q4 2025) - Telegram Bot Integration:
+  - Telegram bot for price alerts and notifications
+  - Remote monitoring commands (/price, /status, /screenshot)
+  - Remote device control and configuration
+  - Daily/weekly summary reports
+  - Trading signal notifications via Telegram
+
+- **v2.2.0** (Q4 2025) - Advanced features:
   - Portfolio tracking
-  - Multi-currency support
+  - Multi-currency support (ETH, ADA, etc.)
   - Custom themes
+  - Address monitoring
 
 - **v3.0.0** (2026) - Enterprise features:
   - Multi-device management
@@ -741,7 +822,7 @@ pio run -e sc01_plus_single --target upload
 - **PubSubClient** - MQTT client for monitoring
 - **ESPAsyncWebServer** - Async web server for configuration
 - **QRCode** - QR code generation for addresses
-- **TelegramBot** - Telegram notifications
+- **UniversalTelegramBot** - Telegram bot integration - Planned for v2.1.0 (~30KB flash, ~6KB RAM)
 
 ### External Services (v1.0.0-beta)
 - **mempool.space API** - Bitcoin data (price, blocks, mempool, fees) - Free, no API key required
@@ -752,8 +833,8 @@ pio run -e sc01_plus_single --target upload
 - **CoinGecko API** - Additional cryptocurrency data and market metrics
 - **Blockchain.com API** - Alternative Bitcoin data source
 - **Lightning Network API** - Lightning Network statistics
-- **Telegram Bot API** - Price alerts and notifications
-- **SendGrid/SMTP** - Email notifications for alerts
+- **Telegram Bot API** - Price alerts and notifications - Planned for v2.1.0 (FREE)
+- **SendGrid/SMTP** - Email notifications for alerts (backup to Telegram)
 - **CoinMarketCap API** - Market dominance and rankings
 - **NTP servers** - Time synchronization (pool.ntp.org)
 - **OTA update server** - Custom firmware hosting

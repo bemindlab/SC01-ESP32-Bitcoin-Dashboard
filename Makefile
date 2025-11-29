@@ -1,7 +1,7 @@
 # Makefile for Bitcoin Dashboard (ESP32-S3)
 # Provides convenient shortcuts for PlatformIO commands
 
-.PHONY: help build build-single upload upload-single monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive patch-keys install-hooks uninstall-hooks
+.PHONY: help build build-single upload upload-single monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive patch-keys install-hooks uninstall-hooks sd-format sd-status sd-enable sd-disable sd-flush sd-memory
 
 # Default target
 help:
@@ -33,11 +33,19 @@ help:
 	@echo "  make check                 - Check configuration"
 	@echo "  make screenshot            - Capture device screen to .tmp/"
 	@echo "  make screenshot-interactive - Open serial monitor for manual commands"
-	@echo "  make patch-keys            - Upload firmware and patch API keys from .tmp/keys.txt"
+	@echo "  make patch-keys            - Patch WiFi and API keys from configs/keys.txt"
 	@echo ""
 	@echo "Git Hooks:"
 	@echo "  make install-hooks         - Install pre-commit and pre-push hooks"
 	@echo "  make uninstall-hooks       - Remove git hooks"
+	@echo ""
+	@echo "SD Card:"
+	@echo "  make sd-format             - Format SD card (WARNING: Deletes all data!)"
+	@echo "  make sd-status             - Check SD card status"
+	@echo "  make sd-enable             - Enable SD card logging"
+	@echo "  make sd-disable            - Disable SD card logging"
+	@echo "  make sd-flush              - Force flush log buffer to SD"
+	@echo "  make sd-memory             - Log current memory usage"
 	@echo ""
 
 # Build the project (multi-screen mode)
@@ -138,14 +146,14 @@ test-native:
 test-hardware:
 	@echo "Running hardware integration tests..."
 	@echo "Make sure device is connected!"
-	python3 -m platformio test -e test_sc01_plus --upload-port /dev/cu.usbmodem1101
+	python3 -m platformio test -e test_sc01_plus --upload-port /dev/cu.usbmodem101
 
 # Capture device screenshot
 screenshot:
 	@echo "Capturing device screenshot..."
 	@echo "Make sure firmware is uploaded and device is running!"
 	@echo ""
-	@python3 scripts/capture_screenshot.py /dev/cu.usbmodem1101
+	@python3 scripts/capture_screenshot.py /dev/cu.usbmodem101
 
 # Interactive screenshot (opens serial monitor first)
 screenshot-interactive:
@@ -153,24 +161,24 @@ screenshot-interactive:
 	@echo "Type 'SCREENSHOT' to capture, or Ctrl+C to exit"
 	@python3 -m platformio device monitor -b 115200
 
-# Patch API keys from file
+# Patch API keys and WiFi credentials from file
 patch-keys:
-	@echo "Patching API keys from configs/keys.txt..."
+	@echo "Patching configuration from configs/keys.txt..."
 	@if [ ! -f ./configs/keys.txt ]; then \
 		echo "Error: ./configs/keys.txt not found!"; \
 		echo ""; \
-		echo "Create this file with your API keys:"; \
+		echo "Create this file with your configuration:"; \
+		echo "  WIFI_SSID=YourNetwork"; \
+		echo "  WIFI_PASS=YourPassword"; \
 		echo "  GEMINI_KEY=AIza..."; \
 		echo "  OPENAI_KEY=sk-proj-..."; \
 		echo ""; \
-		echo "See .configs/keys.txt.template for format"; \
+		echo "See configs/keys.txt.template for format"; \
 		exit 1; \
 	fi
-	@echo "Uploading firmware..."
-	@make upload
 	@echo ""
-	@echo "Sending API keys to device..."
-	@python3 scripts/send_keys.py /dev/cu.usbmodem1101 .tmp/keys.txt
+	@echo "Sending configuration to device via serial..."
+	@python3 scripts/patch_keys.py /dev/cu.usbmodem101 ./configs/keys.txt
 
 # Install git hooks
 install-hooks:
@@ -198,3 +206,35 @@ uninstall-hooks:
 	@rm -f .git/hooks/pre-push
 	@echo "✅ Git hooks removed successfully!"
 	@echo ""
+
+# Format SD card (WARNING: Deletes all data!)
+sd-format:
+	@echo "⚠️  SD Card Format Utility"
+	@echo "============================"
+	@echo ""
+	@python3 scripts/sd_format.py /dev/cu.usbmodem101
+
+# Check SD card status
+sd-status:
+	@echo "Checking SD card status..."
+	@python3 scripts/send_serial_command.py /dev/cu.usbmodem101 "CHECK_SD_CARD"
+
+# Enable SD card logging
+sd-enable:
+	@echo "Enabling SD card logging..."
+	@python3 scripts/send_serial_command.py /dev/cu.usbmodem101 "LOG_ENABLE"
+
+# Disable SD card logging
+sd-disable:
+	@echo "Disabling SD card logging..."
+	@python3 scripts/send_serial_command.py /dev/cu.usbmodem101 "LOG_DISABLE"
+
+# Force flush log buffer
+sd-flush:
+	@echo "Flushing log buffer to SD card..."
+	@python3 scripts/send_serial_command.py /dev/cu.usbmodem101 "LOG_FLUSH"
+
+# Log memory usage
+sd-memory:
+	@echo "Logging memory usage to SD card..."
+	@python3 scripts/send_serial_command.py /dev/cu.usbmodem101 "LOG_MEMORY"

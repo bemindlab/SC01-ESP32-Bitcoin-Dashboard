@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include "../screens/BTCDashboardScreen.h"
+#include "BTCData.h"
 
 // Trading signal types
 enum TradingSignal {

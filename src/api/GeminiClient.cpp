@@ -1,6 +1,7 @@
 #include "GeminiClient.h"
-#include "../screens/BTCDashboardScreen.h"
+#include "BTCData.h"
 #include "../Config.h"
+#include "../utils/SDLogger.h"
 
 GeminiClient::GeminiClient() {
     // Load API key from global config, fallback to hardcoded
@@ -166,13 +167,20 @@ bool GeminiClient::fetchBitcoinNews(const BTCData& data, String& newsText) {
     http.setTimeout(GEMINI_TIMEOUT);
 
     Serial.println("Sending request to Gemini API...");
+    unsigned long startTime = millis();
     int httpCode = http.POST(requestBody);
+    unsigned long duration = millis() - startTime;
 
     if (httpCode > 0) {
         Serial.printf("HTTP Response code: %d\n", httpCode);
 
         if (httpCode == HTTP_CODE_OK) {
             String response = http.getString();
+            size_t responseSize = response.length();
+
+            // Log successful API call
+            sdLogger.logAPI("gemini", "/generateContent", httpCode, duration, responseSize);
+
             Serial.println("Response received, parsing...");
 
             bool success = parseResponse(response, newsText);
@@ -183,6 +191,8 @@ bool GeminiClient::fetchBitcoinNews(const BTCData& data, String& newsText) {
                 Serial.println("---");
                 Serial.println(newsText);
                 Serial.println("---");
+            } else {
+                sdLogger.logAPIError("gemini", "/generateContent", httpCode, "Response parse error");
             }
 
             return success;
@@ -190,11 +200,18 @@ bool GeminiClient::fetchBitcoinNews(const BTCData& data, String& newsText) {
             String response = http.getString();
             Serial.println("HTTP Error Response:");
             Serial.println(response);
+
+            // Log API error
+            sdLogger.logAPIError("gemini", "/generateContent", httpCode, "HTTP error");
+
             newsText = "API Error: HTTP " + String(httpCode);
             http.end();
             return false;
         }
     } else {
+        // Log connection failure
+        sdLogger.logAPIError("gemini", "/generateContent", httpCode, "Connection failed");
+
         Serial.printf("HTTP Request failed: %s\n", http.errorToString(httpCode).c_str());
         newsText = "Network Error: Failed to connect to Gemini API";
         http.end();
@@ -218,13 +235,26 @@ bool GeminiClient::testConnection() {
     http.addHeader("Content-Type", "application/json");
     http.setTimeout(GEMINI_TIMEOUT);
 
+    unsigned long startTime = millis();
     int httpCode = http.POST(requestBody);
-    http.end();
+    unsigned long duration = millis() - startTime;
 
     if (httpCode == HTTP_CODE_OK) {
+        String response = http.getString();
+        size_t responseSize = response.length();
+        http.end();
+
+        // Log successful test
+        sdLogger.logAPI("gemini", "/generateContent (test)", httpCode, duration, responseSize);
+
         Serial.println("Gemini API connection test successful!");
         return true;
     } else {
+        http.end();
+
+        // Log test failure
+        sdLogger.logAPIError("gemini", "/generateContent (test)", httpCode, "Connection test failed");
+
         Serial.printf("Gemini API connection test failed: %d\n", httpCode);
         return false;
     }
@@ -232,4 +262,182 @@ bool GeminiClient::testConnection() {
 
 void GeminiClient::setApiKey(const String& key) {
     apiKey = key;
+}
+
+bool GeminiClient::fetchDCARecommendation(const BTCData& data, String& recommendation) {
+    // Check WiFi connection
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("WiFi not connected");
+        recommendation = "WAIT";
+        return false;
+    }
+
+    // Generate DCA-specific prompt
+    String prompt = "You are a Bitcoin DCA (Dollar Cost Average) advisor. ";
+    prompt += "Based on the following current market data, provide a ONE-WORD recommendation: BUY, SELL, or WAIT.\n\n";
+
+    prompt += "CURRENT DATA:\n";
+    prompt += "- BTC Price: $" + String(data.priceUSD, 2) + " USD\n";
+
+    if (data.feeFast > 0) {
+        prompt += "- Network Fees: Fast=" + String(data.feeFast) + " sat/vB\n";
+    }
+
+    if (data.mempoolCount > 0) {
+        prompt += "- Mempool: " + String(data.mempoolCount) + " pending transactions\n";
+    }
+
+    prompt += "\nDCA STRATEGY CONSIDERATIONS:\n";
+    prompt += "- BUY: Good time to accumulate (favorable price, low volatility, or regular schedule)\n";
+    prompt += "- SELL: Consider taking profits (extreme highs, bearish signals)\n";
+    prompt += "- WAIT: Hold off on buying (high fees, extreme volatility, or uncertain conditions)\n\n";
+    prompt += "Respond with ONLY ONE WORD: BUY, SELL, or WAIT. No explanation needed.";
+
+    Serial.println("DCA Prompt:");
+    Serial.println(prompt);
+
+    // Build and send request
+    String endpoint = buildEndpointURL();
+    String requestBody = buildRequestBody(prompt);
+
+    http.begin(endpoint);
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(GEMINI_TIMEOUT);
+
+    Serial.println("Fetching DCA recommendation from Gemini...");
+    unsigned long startTime = millis();
+    int httpCode = http.POST(requestBody);
+    unsigned long duration = millis() - startTime;
+
+    if (httpCode == HTTP_CODE_OK) {
+        String response = http.getString();
+        size_t responseSize = response.length();
+
+        sdLogger.logAPI("gemini", "/dca-recommendation", httpCode, duration, responseSize);
+
+        String fullResponse;
+        bool success = parseResponse(response, fullResponse);
+        http.end();
+
+        if (success) {
+            // Extract first word from response
+            fullResponse.trim();
+            fullResponse.toUpperCase();
+
+            if (fullResponse.indexOf("BUY") >= 0) {
+                recommendation = "BUY";
+            } else if (fullResponse.indexOf("SELL") >= 0) {
+                recommendation = "SELL";
+            } else if (fullResponse.indexOf("WAIT") >= 0) {
+                recommendation = "WAIT";
+            } else {
+                recommendation = "WAIT"; // Default to WAIT if unclear
+            }
+
+            Serial.printf("DCA Recommendation: %s\n", recommendation.c_str());
+            return true;
+        } else {
+            sdLogger.logAPIError("gemini", "/dca-recommendation", httpCode, "Parse error");
+            recommendation = "WAIT";
+            return false;
+        }
+    } else {
+        sdLogger.logAPIError("gemini", "/dca-recommendation", httpCode, "HTTP error");
+        Serial.printf("DCA request failed: %d\n", httpCode);
+        recommendation = "WAIT";
+        http.end();
+        return false;
+    }
+}
+
+bool GeminiClient::fetchTradingSignal(const BTCData& data, String& signal) {
+    // Check WiFi connection
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("WiFi not connected");
+        signal = "HOLD";
+        return false;
+    }
+
+    // Generate short-term trading signal prompt
+    String prompt = "You are a Bitcoin short-term trading analyst. ";
+    prompt += "Based on the following current market data, provide a ONE-WORD trading signal for the 15-minute to 1-hour timeframe: BUY, SELL, or HOLD.\n\n";
+
+    prompt += "CURRENT DATA:\n";
+    prompt += "- BTC Price: $" + String(data.priceUSD, 2) + " USD\n";
+
+    if (data.blockHeight > 0) {
+        prompt += "- Latest Block: #" + String(data.blockHeight) + "\n";
+    }
+
+    if (data.feeFast > 0) {
+        prompt += "- Network Fees: Fast=" + String(data.feeFast);
+        prompt += " Medium=" + String(data.feeMedium);
+        prompt += " Slow=" + String(data.feeSlow) + " sat/vB\n";
+    }
+
+    if (data.mempoolCount > 0) {
+        prompt += "- Mempool: " + String(data.mempoolCount) + " pending transactions\n";
+    }
+
+    prompt += "\nSHORT-TERM TRADING CONSIDERATIONS (15m-1h timeframe):\n";
+    prompt += "- BUY: Bullish momentum, accumulation signals, support levels holding\n";
+    prompt += "- SELL: Bearish signals, profit-taking opportunity, resistance rejection\n";
+    prompt += "- HOLD: Consolidation, unclear direction, wait for confirmation\n\n";
+    prompt += "Respond with ONLY ONE WORD: BUY, SELL, or HOLD. No explanation needed.";
+
+    Serial.println("Trading Signal Prompt:");
+    Serial.println(prompt);
+
+    // Build and send request
+    String endpoint = buildEndpointURL();
+    String requestBody = buildRequestBody(prompt);
+
+    http.begin(endpoint);
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(GEMINI_TIMEOUT);
+
+    Serial.println("Fetching trading signal from Gemini...");
+    unsigned long startTime = millis();
+    int httpCode = http.POST(requestBody);
+    unsigned long duration = millis() - startTime;
+
+    if (httpCode == HTTP_CODE_OK) {
+        String response = http.getString();
+        size_t responseSize = response.length();
+
+        sdLogger.logAPI("gemini", "/trading-signal", httpCode, duration, responseSize);
+
+        String fullResponse;
+        bool success = parseResponse(response, fullResponse);
+        http.end();
+
+        if (success) {
+            // Extract first word from response
+            fullResponse.trim();
+            fullResponse.toUpperCase();
+
+            if (fullResponse.indexOf("BUY") >= 0) {
+                signal = "BUY";
+            } else if (fullResponse.indexOf("SELL") >= 0) {
+                signal = "SELL";
+            } else if (fullResponse.indexOf("HOLD") >= 0) {
+                signal = "HOLD";
+            } else {
+                signal = "HOLD"; // Default to HOLD if unclear
+            }
+
+            Serial.printf("Trading Signal (15m-1h): %s\n", signal.c_str());
+            return true;
+        } else {
+            sdLogger.logAPIError("gemini", "/trading-signal", httpCode, "Parse error");
+            signal = "HOLD";
+            return false;
+        }
+    } else {
+        sdLogger.logAPIError("gemini", "/trading-signal", httpCode, "HTTP error");
+        Serial.printf("Trading signal request failed: %d\n", httpCode);
+        signal = "HOLD";
+        http.end();
+        return false;
+    }
 }

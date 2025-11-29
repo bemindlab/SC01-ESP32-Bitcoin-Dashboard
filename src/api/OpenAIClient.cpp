@@ -1,4 +1,5 @@
 #include "OpenAIClient.h"
+#include "../utils/SDLogger.h"
 
 OpenAIClient::OpenAIClient() {
     model = "gpt-3.5-turbo";  // Default to cost-effective model
@@ -220,15 +221,30 @@ bool OpenAIClient::fetchTradingSuggestion(const BTCData& data, TradingSuggestion
     Serial.println("Request size: " + String(requestBody.length()) + " bytes");
 
     // Make POST request
+    unsigned long startTime = millis();
     int httpCode = http.POST(requestBody);
+    unsigned long duration = millis() - startTime;
 
     if (httpCode == HTTP_CODE_OK) {
         String response = http.getString();
+        size_t responseSize = response.length();
+
+        // Log successful API call
+        sdLogger.logAPI("openai", "/v1/chat/completions", httpCode, duration, responseSize);
+
         http.end();
 
         // Parse response
-        return parseResponse(response, suggestion);
+        bool success = parseResponse(response, suggestion);
+        if (!success) {
+            sdLogger.logAPIError("openai", "/v1/chat/completions", httpCode, "Response parse error");
+        }
+        return success;
     } else {
+        // Log API error
+        sdLogger.logAPIError("openai", "/v1/chat/completions", httpCode,
+                           httpCode > 0 ? "HTTP error" : "Connection failed");
+
         Serial.print("HTTP error: ");
         Serial.println(httpCode);
         if (httpCode > 0) {
@@ -250,8 +266,25 @@ bool OpenAIClient::testConnection() {
     // Minimal test request
     String testBody = "{\"model\":\"" + model + "\",\"messages\":[{\"role\":\"user\",\"content\":\"test\"}],\"max_tokens\":5}";
 
+    unsigned long startTime = millis();
     int httpCode = http.POST(testBody);
-    http.end();
+    unsigned long duration = millis() - startTime;
 
-    return (httpCode == HTTP_CODE_OK);
+    if (httpCode == HTTP_CODE_OK) {
+        String response = http.getString();
+        size_t responseSize = response.length();
+        http.end();
+
+        // Log successful test
+        sdLogger.logAPI("openai", "/v1/chat/completions (test)", httpCode, duration, responseSize);
+
+        return true;
+    } else {
+        http.end();
+
+        // Log test failure
+        sdLogger.logAPIError("openai", "/v1/chat/completions (test)", httpCode, "Connection test failed");
+
+        return false;
+    }
 }

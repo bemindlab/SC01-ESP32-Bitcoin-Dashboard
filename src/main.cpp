@@ -4,6 +4,8 @@
 #include "DisplayConfig.h"
 #include "screens/ScreenManager.h"
 #include "Config.h"
+#include "utils/SDLogger.h"
+#include "utils/CrashHandler.h"
 
 LGFX lcd;
 FT6X36 touch(&Wire, 7);  // INT pin = GPIO 7
@@ -41,18 +43,146 @@ void processSerialCommand() {
         if (command == "SCREENSHOT") {
             Serial.println("Screenshot command received!");
             sendScreenshot();
+        } else if (command == "DEBUG_SCREENS") {
+            Serial.println("\n=== Debug: Capturing Main Screen ===");
+            Serial.println("Capturing main screen...");
+            sendScreenshot();
+            Serial.println("✓ Debug screen capture complete!");
+
         } else if (command == "STATUS") {
             Serial.printf("WiFi: %s\n", WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
             Serial.printf("Free Heap: %d bytes\n", ESP.getFreeHeap());
             Serial.printf("Uptime: %lu seconds\n", millis() / 1000);
             globalConfig.printConfig();
+        } else if (command == "CHECK_SD_CARD") {
+            Serial.println("\n=== SD Card Status ===");
+            Serial.printf("Logger Ready: %s\n", sdLogger.isReady() ? "Yes" : "No");
+            Serial.printf("Logger Enabled: %s\n", sdLogger.isEnabled() ? "Yes" : "No");
+
+            if (sdLogger.isReady()) {
+                Serial.printf("Card Present: %s\n", sdLogger.isCardPresent() ? "Yes" : "No");
+                Serial.printf("Status: %s\n", sdLogger.getStatusString());
+                Serial.printf("Free Space: %.2f GB\n", sdLogger.getFreeSpace() / (1024.0 * 1024.0 * 1024.0));
+                Serial.printf("Total Space: %.2f GB\n", sdLogger.getTotalSpace() / (1024.0 * 1024.0 * 1024.0));
+                Serial.printf("Log Files: %d\n", sdLogger.getLogFileCount());
+            } else {
+                Serial.println("\n⚠️  SD Card Not Available");
+                Serial.println("\nSD Card Pin Configuration:");
+                Serial.printf("  CS (Chip Select): GPIO %d\n", SD_CS_PIN);
+                Serial.printf("  MOSI (Data Out):  GPIO %d\n", SD_MOSI_PIN);
+                Serial.printf("  MISO (Data In):   GPIO %d\n", SD_MISO_PIN);
+                Serial.printf("  CLK (Clock):      GPIO %d\n", SD_CLK_PIN);
+                Serial.println("\nPossible causes:");
+                Serial.println("  1. No SD card inserted in slot");
+                Serial.println("  2. SD card not formatted (use FAT32)");
+                Serial.println("  3. SD card damaged or incompatible");
+                Serial.println("  4. Hardware connection issue");
+                Serial.println("\nTo retry: Restart device or use REINIT_SD command");
+            }
+        } else if (command == "REINIT_SD") {
+            Serial.println("\n=== Reinitializing SD Card ===");
+            if (sdLogger.begin()) {
+                Serial.println("✓ SD card reinitialized successfully");
+            } else {
+                Serial.println("✗ SD card reinitialization failed");
+            }
+        } else if (command == "FORMAT_SD_CARD") {
+            if (sdLogger.formatCard()) {
+                Serial.println("✓ SD card formatted successfully");
+            } else {
+                Serial.println("✗ SD card format failed");
+            }
+        } else if (command == "LOG_ENABLE") {
+            sdLogger.enable();
+            Serial.println("✓ SD card logging enabled");
+        } else if (command == "LOG_DISABLE") {
+            sdLogger.disable();
+            Serial.println("✓ SD card logging disabled");
+        } else if (command == "LOG_FLUSH") {
+            sdLogger.flush();
+            Serial.println("✓ Log buffer flushed to SD card");
+        } else if (command.startsWith("LOG_LEVEL=")) {
+            String level = command.substring(10);
+            level.trim();
+            level.toUpperCase();
+
+            if (level == "DEBUG") {
+                sdLogger.setLogLevel(LOG_DEBUG);
+                Serial.println("✓ Log level set to DEBUG");
+            } else if (level == "INFO") {
+                sdLogger.setLogLevel(LOG_INFO);
+                Serial.println("✓ Log level set to INFO");
+            } else if (level == "WARN") {
+                sdLogger.setLogLevel(LOG_WARN);
+                Serial.println("✓ Log level set to WARN");
+            } else if (level == "ERROR") {
+                sdLogger.setLogLevel(LOG_ERROR);
+                Serial.println("✓ Log level set to ERROR");
+            } else if (level == "FATAL") {
+                sdLogger.setLogLevel(LOG_FATAL);
+                Serial.println("✓ Log level set to FATAL");
+            } else {
+                Serial.println("✗ Invalid log level. Use: DEBUG, INFO, WARN, ERROR, or FATAL");
+            }
+        } else if (command == "LOG_MEMORY") {
+            sdLogger.logMemoryUsage();
+            Serial.println("✓ Memory usage logged to SD card");
+        } else if (command.startsWith("EXPORT_DATA")) {
+            // Parse data type (e.g., EXPORT_DATA=PRICE, EXPORT_DATA=ALL, or just EXPORT_DATA for all)
+            String dataType = "ALL";  // Default to all
+            if (command.indexOf('=') > 0) {
+                dataType = command.substring(command.indexOf('=') + 1);
+                dataType.trim();
+                dataType.toUpperCase();
+            }
+            Serial.printf("Exporting CSV data: %s\n", dataType.c_str());
+            sdLogger.exportData(dataType.c_str());
+        } else if (command == "CLEANUP_CSV") {
+            Serial.println("Running CSV cleanup (retention policy)...");
+            sdLogger.cleanup();
+        } else if (command == "LAST_CRASH") {
+            Serial.println("\n=== Last Crash Information ===");
+            CrashInfo info = crashHandler.getCrashInfo();
+            if (info.hasCrashed || info.crashCount > 0) {
+                Serial.printf("Crash Count: %u\n", info.crashCount);
+                Serial.printf("Last Crash Reason: %s\n", info.lastCrashReason);
+                Serial.printf("Last Screen: %s\n", info.lastScreen);
+                Serial.printf("Last API Call: %s\n", info.lastAPICall);
+                Serial.printf("Uptime at crash: %u seconds\n", info.lastCrashUptime / 1000);
+                Serial.printf("Watchdog timeout: %s\n", info.watchdogTimeout ? "YES" : "NO");
+                Serial.println("\nCheck /logs/errors/ directory for detailed crash dumps");
+            } else {
+                Serial.println("No crash detected since last power-on reset");
+            }
         } else if (command == "HELP") {
-            Serial.println("\nAvailable commands:");
+            Serial.println("\n=== Available Commands ===");
+            Serial.println("\n[Display]");
             Serial.println("  SCREENSHOT         - Capture display buffer");
+            Serial.println("  DEBUG_SCREENS      - Capture all screens for layout debugging");
+            Serial.println("\n[Device Status]");
             Serial.println("  STATUS             - Show device status");
+            Serial.println("  LAST_CRASH         - Show last crash information");
+            Serial.println("\n[Configuration]");
+            Serial.println("  SET_WIFI=SSID,Pass - Set WiFi credentials (requires restart)");
             Serial.println("  SET_GEMINI_KEY=xxx - Set Gemini API key");
             Serial.println("  SET_OPENAI_KEY=xxx - Set OpenAI API key");
             Serial.println("  RESET_CONFIG       - Reset all configuration");
+            Serial.println("\n[SD Card]");
+            Serial.println("  CHECK_SD_CARD      - Check SD card status (detailed diagnostics)");
+            Serial.println("  REINIT_SD          - Reinitialize SD card (hot-swap recovery)");
+            Serial.println("  FORMAT_SD_CARD     - Format SD card (WARNING: Deletes all data!)");
+            Serial.println("  LOG_ENABLE         - Enable SD card logging");
+            Serial.println("  LOG_DISABLE        - Disable SD card logging");
+            Serial.println("  LOG_FLUSH          - Force flush log buffer");
+            Serial.println("  LOG_LEVEL=LEVEL    - Set log level (DEBUG/INFO/WARN/ERROR/FATAL)");
+            Serial.println("  LOG_MEMORY         - Log current memory usage");
+            Serial.println("\n[CSV Data Export]");
+            Serial.println("  EXPORT_DATA        - Export all CSV data to serial console");
+            Serial.println("  EXPORT_DATA=PRICE  - Export only price data");
+            Serial.println("  EXPORT_DATA=BLOCKS - Export only block data");
+            Serial.println("  EXPORT_DATA=MEMPOOL- Export only mempool data");
+            Serial.println("  CLEANUP_CSV        - Run CSV retention policy (delete old files)");
+            Serial.println("\n[Help]");
             Serial.println("  HELP               - Show this help");
         } else if (command.startsWith("SET_GEMINI_KEY=")) {
             String key = command.substring(15);
@@ -81,6 +211,33 @@ void processSerialCommand() {
             } else {
                 Serial.println("✗ Invalid API key (empty)");
             }
+        } else if (command.startsWith("SET_WIFI=")) {
+            String params = command.substring(9);
+            params.trim();
+
+            // Parse SSID and password (format: SET_WIFI=SSID,Password)
+            int commaIndex = params.indexOf(',');
+            if (commaIndex > 0) {
+                String ssid = params.substring(0, commaIndex);
+                String password = params.substring(commaIndex + 1);
+
+                ssid.trim();
+                password.trim();
+
+                if (ssid.length() > 0) {
+                    globalConfig.setWiFiCredentials(ssid, password);
+                    if (globalConfig.save()) {
+                        Serial.println("✓ WiFi credentials saved successfully!");
+                        Serial.println("Restart device to connect to new network");
+                    } else {
+                        Serial.println("✗ Failed to save WiFi credentials");
+                    }
+                } else {
+                    Serial.println("✗ Invalid SSID (empty)");
+                }
+            } else {
+                Serial.println("✗ Invalid format. Use: SET_WIFI=SSID,Password");
+            }
         } else if (command == "RESET_CONFIG") {
             Serial.println("Resetting configuration...");
             globalConfig.reset();
@@ -95,6 +252,9 @@ void setup() {
     Serial.begin(115200);
     Serial.println("\n\nBitcoin Dashboard - Bootstrap Mode");
 
+    // Initialize crash handler (must be first to detect crashes)
+    crashHandler.begin();
+
     // Load configuration from NVRAM
     Serial.println("\n=== Initializing Configuration ===");
     globalConfig.load();
@@ -106,18 +266,34 @@ void setup() {
         Serial.println("  SET_GEMINI_KEY=your-api-key-here");
     }
 
+    // Initialize SD card logging
+    Serial.println("\n=== Initializing SD Card ===");
+    if (sdLogger.begin()) {
+        Serial.println("✓ SD card logging initialized");
+        sdLogger.logBoot("Bitcoin Dashboard started");
+        sdLogger.logf(LOG_INFO, "Firmware version: 1.2.0");
+        sdLogger.logf(LOG_INFO, "CPU: ESP32-S3 @ %u MHz", ESP.getCpuFreqMHz());
+        sdLogger.logf(LOG_INFO, "Flash: %u MB", ESP.getFlashChipSize() / (1024 * 1024));
+    } else {
+        Serial.println("⚠️  SD card not available (logging disabled)");
+        Serial.println("  Insert SD card and restart to enable logging");
+    }
+
     // Initialize display
     lcd.init();
     lcd.setRotation(1);  // Landscape
     lcd.setBrightness(255);
     Serial.println("Display initialized!");
+    sdLogger.log(LOG_INFO, "Display initialized: 480x320 landscape mode");
 
     // Initialize touch (SDA=6, SCL=5)
     Wire.begin(6, 5);
     if (touch.begin(40)) {
         Serial.println("Touch initialized successfully!");
+        sdLogger.log(LOG_INFO, "Touch controller initialized: FT6X36");
     } else {
         Serial.println("ERROR: Touch initialization failed!");
+        sdLogger.log(LOG_ERROR, "Touch controller initialization failed");
     }
 
     // Test touch
@@ -130,6 +306,7 @@ void setup() {
 
     // Create screen manager
     screenManager = new ScreenManager(&lcd, &touch);
+    sdLogger.log(LOG_INFO, "Screen manager initialized");
 
     // Check if WiFi credentials are stored in configuration
     bool hasStoredWiFi = globalConfig.hasWiFiCredentials();
@@ -139,6 +316,7 @@ void setup() {
         String ssid = globalConfig.getWiFiSSID();
         String pass = globalConfig.getWiFiPassword();
 
+        sdLogger.logf(LOG_INFO, "Attempting WiFi connection to SSID: %s", ssid.c_str());
         WiFi.begin(ssid.c_str(), pass.c_str());
 
         int attempts = 0;
@@ -151,14 +329,20 @@ void setup() {
         if (WiFi.status() == WL_CONNECTED) {
             Serial.println("\n✓ WiFi connected!");
             Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
-            screenManager->switchScreen(SCREEN_DASHBOARD);
+            sdLogger.logf(LOG_INFO, "WiFi connected successfully: IP=%s, RSSI=%d dBm",
+                         WiFi.localIP().toString().c_str(), WiFi.RSSI());
+            screenManager->switchScreen(SCREEN_MAIN);
         } else {
 #ifdef SINGLE_SCREEN_MODE
             Serial.println("\n✗ WiFi connection failed!");
-            Serial.println("SINGLE_SCREEN_MODE: Staying on dashboard (configure WiFi via serial)");
-            screenManager->switchScreen(SCREEN_DASHBOARD);
+            Serial.println("SINGLE_SCREEN_MODE: Staying on Main screen (configure WiFi via serial)");
+            sdLogger.logf(LOG_WARN, "WiFi connection failed after %d attempts (SSID: %s)",
+                         attempts, ssid.c_str());
+            screenManager->switchScreen(SCREEN_MAIN);
 #else
             Serial.println("\n✗ WiFi connection failed, showing scan screen");
+            sdLogger.logf(LOG_WARN, "WiFi connection failed after %d attempts, showing WiFi scan",
+                         attempts);
             screenManager->switchScreen(SCREEN_WIFI_SCAN);
 #endif
         }
@@ -167,20 +351,36 @@ void setup() {
         Serial.println("No stored WiFi credentials!");
         Serial.println("SINGLE_SCREEN_MODE: Use serial commands to configure WiFi");
         Serial.println("Example: SET_WIFI=YourSSID,YourPassword");
-        screenManager->switchScreen(SCREEN_DASHBOARD);
+        sdLogger.log(LOG_INFO, "No WiFi credentials configured (SINGLE_SCREEN_MODE)");
+        screenManager->switchScreen(SCREEN_MAIN);
 #else
         // No stored WiFi, show scan screen
         Serial.println("No stored WiFi credentials, showing scan screen...");
+        sdLogger.log(LOG_INFO, "No WiFi credentials, displaying WiFi scan screen");
         screenManager->switchScreen(SCREEN_WIFI_SCAN);
 #endif
     }
+
+    // Log initial memory usage
+    sdLogger.logMemoryUsage();
+    sdLogger.log(LOG_INFO, "Boot sequence completed");
+
+    // Initialize watchdog timer after successful boot (30 second timeout)
+    crashHandler.initWatchdog(30);
+    crashHandler.setCurrentScreen("Main");
+    Serial.println("\n✓ System initialization complete");
 }
 
 // ==================== Main Loop ====================
 unsigned long lastTouchDebug = 0;
+unsigned long lastMemoryLog = 0;
+const unsigned long MEMORY_LOG_INTERVAL = 300000; // 5 minutes in milliseconds
 
 void loop() {
-    // Process serial commands (SCREENSHOT, STATUS, HELP)
+    // Feed watchdog timer (must be called regularly)
+    crashHandler.feedWatchdog();
+
+    // Process serial commands (SCREENSHOT, STATUS, HELP, LAST_CRASH)
     processSerialCommand();
 
     // Debug: Print touch status every 2 seconds
@@ -191,6 +391,16 @@ void loop() {
         }
         lastTouchDebug = millis();
     }
+
+    // Periodic memory logging (every 5 minutes)
+    if (millis() - lastMemoryLog >= MEMORY_LOG_INTERVAL) {
+        sdLogger.logMemoryUsage();
+        sdLogger.logf(LOG_DEBUG, "Uptime: %lu seconds", millis() / 1000);
+        lastMemoryLog = millis();
+    }
+
+    // Check for SD card hot-swap
+    sdLogger.checkHotSwap();
 
     // Update current screen (includes touch processing)
     screenManager->update();

@@ -1,4 +1,5 @@
 #include "Config.h"
+#include "utils/SDLogger.h"
 
 // Global instance
 ConfigManager globalConfig;
@@ -52,6 +53,7 @@ bool ConfigManager::save() {
     // Open preferences in read-write mode
     if (!preferences.begin(CONFIG_NAMESPACE, false)) {
         Serial.println("Failed to open preferences for writing");
+        sdLogger.log(LOG_ERROR, "Failed to save configuration: NVRAM write error");
         return false;
     }
 
@@ -74,6 +76,7 @@ bool ConfigManager::save() {
     preferences.end();
 
     Serial.println("Configuration saved successfully!");
+    sdLogger.log(LOG_INFO, "Configuration saved to NVRAM");
     printConfig();
 
     return true;
@@ -81,10 +84,12 @@ bool ConfigManager::save() {
 
 void ConfigManager::reset() {
     Serial.println("\n=== Resetting Configuration ===");
+    sdLogger.log(LOG_WARN, "Configuration reset requested");
 
     // Open preferences in read-write mode
     if (!preferences.begin(CONFIG_NAMESPACE, false)) {
         Serial.println("Failed to open preferences for reset");
+        sdLogger.log(LOG_ERROR, "Failed to reset configuration: NVRAM access error");
         return;
     }
 
@@ -96,42 +101,76 @@ void ConfigManager::reset() {
     config = AppConfig();
 
     Serial.println("Configuration reset to defaults");
+    sdLogger.log(LOG_INFO, "Configuration reset to factory defaults");
 }
 
 void ConfigManager::setGeminiApiKey(const String& key) {
     config.geminiApiKey = key;
     Serial.println("Gemini API key updated");
+
+    // Log with masked key (show only first 4 chars)
+    if (key.length() > 4) {
+        String masked = key.substring(0, 4) + "..." + String((int)(key.length() - 4)) + " chars";
+        sdLogger.logf(LOG_INFO, "Gemini API key updated: %s", masked.c_str());
+    } else {
+        sdLogger.log(LOG_INFO, "Gemini API key updated: ****");
+    }
 }
 
 void ConfigManager::setOpenAIApiKey(const String& key) {
     config.openaiApiKey = key;
     Serial.println("OpenAI API key updated");
+
+    // Log with masked key (show only first 4 chars)
+    if (key.length() > 4) {
+        String masked = key.substring(0, 4) + "..." + String((int)(key.length() - 4)) + " chars";
+        sdLogger.logf(LOG_INFO, "OpenAI API key updated: %s", masked.c_str());
+    } else {
+        sdLogger.log(LOG_INFO, "OpenAI API key updated: ****");
+    }
 }
 
 void ConfigManager::setWiFiCredentials(const String& ssid, const String& password) {
     config.wifiSSID = ssid;
     config.wifiPassword = password;
     Serial.printf("WiFi credentials updated: SSID=%s\n", ssid.c_str());
+
+    // Log WiFi change with masked password
+    sdLogger.logf(LOG_INFO, "WiFi credentials updated: SSID=%s, Password=**** (%d chars)",
+                 ssid.c_str(), password.length());
 }
 
 void ConfigManager::setPriceInterval(unsigned long interval) {
+    unsigned long oldInterval = config.priceInterval;
     config.priceInterval = interval;
     Serial.printf("Price interval updated: %lu ms\n", interval);
+
+    sdLogger.logf(LOG_INFO, "Price update interval changed: %lu ms -> %lu ms (%lu sec)",
+                 oldInterval, interval, interval / 1000);
 }
 
 void ConfigManager::setBlockInterval(unsigned long interval) {
+    unsigned long oldInterval = config.blockInterval;
     config.blockInterval = interval;
     Serial.printf("Block interval updated: %lu ms\n", interval);
+
+    sdLogger.logf(LOG_INFO, "Block update interval changed: %lu ms -> %lu ms (%lu sec)",
+                 oldInterval, interval, interval / 1000);
 }
 
 void ConfigManager::setMempoolInterval(unsigned long interval) {
+    unsigned long oldInterval = config.mempoolInterval;
     config.mempoolInterval = interval;
     Serial.printf("Mempool interval updated: %lu ms\n", interval);
+
+    sdLogger.logf(LOG_INFO, "Mempool update interval changed: %lu ms -> %lu ms (%lu sec)",
+                 oldInterval, interval, interval / 1000);
 }
 
 void ConfigManager::setFirstRun(bool firstRun) {
     config.firstRun = firstRun;
     Serial.printf("First run flag: %s\n", firstRun ? "true" : "false");
+    sdLogger.logf(LOG_INFO, "First run flag set to: %s", firstRun ? "true" : "false");
 }
 
 bool ConfigManager::isValid() const {

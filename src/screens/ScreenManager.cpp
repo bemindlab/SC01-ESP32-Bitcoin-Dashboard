@@ -2,12 +2,8 @@
 #ifndef SINGLE_SCREEN_MODE
 #include "WiFiScanScreen.h"
 #endif
-#include "BTCDashboardScreen.h"
-#ifndef SINGLE_SCREEN_MODE
-#include "BTCNewsScreen.h"
-#include "BTCTradingSuggestionScreen.h"
-#include "SettingsScreen.h"
-#endif
+#include "MainScreen.h"
+#include "../utils/SDLogger.h"
 
 ScreenManager* ScreenManager::_instance = nullptr;
 
@@ -16,7 +12,7 @@ ScreenManager::ScreenManager(LGFX* display, FT6X36* touchController) {
     touch = touchController;
     currentScreen = nullptr;
 #ifdef SINGLE_SCREEN_MODE
-    currentScreenType = SCREEN_DASHBOARD;
+    currentScreenType = SCREEN_MAIN;
 #else
     currentScreenType = SCREEN_WIFI_SCAN;
 #endif
@@ -32,6 +28,28 @@ ScreenManager::ScreenManager(LGFX* display, FT6X36* touchController) {
 }
 
 void ScreenManager::switchScreen(Screen screen) {
+    // Get screen name helper lambda
+    auto getScreenName = [](Screen s) -> const char* {
+        switch (s) {
+#ifndef SINGLE_SCREEN_MODE
+            case SCREEN_WIFI_SCAN: return "WiFi Scan";
+            case SCREEN_WIFI_CONNECT: return "WiFi Connect";
+#endif
+            case SCREEN_MAIN: return "Main";
+            default: return "Unknown";
+        }
+    };
+
+    // Log screen transition
+    const char* fromScreen = getScreenName(currentScreenType);
+    const char* toScreen = getScreenName(screen);
+
+    if (currentScreen != nullptr) {
+        sdLogger.logf(LOG_INFO, "Screen transition: %s -> %s", fromScreen, toScreen);
+    } else {
+        sdLogger.logf(LOG_INFO, "Initial screen: %s", toScreen);
+    }
+
     // Delete old screen
     if (currentScreen != nullptr) {
         delete currentScreen;
@@ -49,26 +67,13 @@ void ScreenManager::switchScreen(Screen screen) {
         case SCREEN_WIFI_CONNECT:
             // TODO: Implement WiFi connect screen
             Serial.println("WiFi Connect screen not yet implemented");
+            sdLogger.log(LOG_WARN, "WiFi Connect screen not yet implemented");
             break;
 #endif
 
-        case SCREEN_DASHBOARD:
-            currentScreen = new BTCDashboardScreen();
+        case SCREEN_MAIN:
+            currentScreen = new MainScreen();
             break;
-
-#ifndef SINGLE_SCREEN_MODE
-        case SCREEN_BTC_NEWS:
-            currentScreen = new BTCNewsScreen();
-            break;
-
-        case SCREEN_TRADING_SUGGESTION:
-            currentScreen = new BTCTradingSuggestionScreen();
-            break;
-
-        case SCREEN_SETTINGS:
-            currentScreen = new SettingsScreen();
-            break;
-#endif
     }
 
     if (currentScreen != nullptr) {
@@ -166,109 +171,8 @@ void ScreenManager::touchCallback(TPoint point, TEvent e) {
 
 #ifndef SINGLE_SCREEN_MODE
 void ScreenManager::handleSwipe(int16_t deltaX, int16_t deltaY, unsigned long duration) {
-    // Check if this is a valid horizontal swipe
-    if (!isHorizontalSwipe(deltaX, deltaY)) {
-        Serial.println("Not a horizontal swipe, ignoring");
-        return;
-    }
-
-    // Check duration
-    if (duration > SWIPE_MAX_TIME) {
-        Serial.printf("Swipe too slow (%lu ms), ignoring\n", duration);
-        return;
-    }
-
-    // Check distance
-    int absX = abs(deltaX);
-    if (absX < SWIPE_MIN_DISTANCE) {
-        Serial.printf("Swipe too short (%d px), ignoring\n", absX);
-        return;
-    }
-
-    // Get current BTC data to share across screens
-    BTCData currentData;
-    bool hasData = false;
-
-    if (currentScreenType == SCREEN_DASHBOARD) {
-        BTCDashboardScreen* dashboard = static_cast<BTCDashboardScreen*>(currentScreen);
-        currentData = dashboard->getBTCData();
-        hasData = true;
-    }
-
-    // Determine swipe direction and handle circular navigation
-    if (deltaX > 0) {
-        // Right swipe (clockwise: Dashboard → Trading → News → Dashboard)
-        Serial.println("Right swipe detected!");
-
-        switch (currentScreenType) {
-            case SCREEN_DASHBOARD:
-                // Dashboard → Trading
-                Serial.println("Navigating from Dashboard to Trading");
-                switchScreen(SCREEN_TRADING_SUGGESTION);
-                if (hasData) {
-                    BTCTradingSuggestionScreen* trading =
-                        static_cast<BTCTradingSuggestionScreen*>(currentScreen);
-                    trading->setBTCData(currentData);
-                }
-                break;
-
-            case SCREEN_BTC_NEWS:
-                // News → Dashboard
-                Serial.println("Navigating from News to Dashboard");
-                switchScreen(SCREEN_DASHBOARD);
-                break;
-
-            case SCREEN_TRADING_SUGGESTION:
-                // Trading → News
-                Serial.println("Navigating from Trading to News");
-                switchScreen(SCREEN_BTC_NEWS);
-                if (hasData) {
-                    BTCNewsScreen* news = static_cast<BTCNewsScreen*>(currentScreen);
-                    news->setBTCData(currentData);
-                }
-                break;
-
-            default:
-                Serial.println("Swipe not handled for this screen");
-                break;
-        }
-    } else {
-        // Left swipe (counter-clockwise: Dashboard → News → Trading → Dashboard)
-        Serial.println("Left swipe detected!");
-
-        switch (currentScreenType) {
-            case SCREEN_DASHBOARD:
-                // Dashboard → News
-                Serial.println("Navigating from Dashboard to News");
-                switchScreen(SCREEN_BTC_NEWS);
-                if (hasData) {
-                    BTCNewsScreen* news = static_cast<BTCNewsScreen*>(currentScreen);
-                    news->setBTCData(currentData);
-                }
-                break;
-
-            case SCREEN_BTC_NEWS:
-                // News → Trading
-                Serial.println("Navigating from News to Trading");
-                switchScreen(SCREEN_TRADING_SUGGESTION);
-                if (hasData) {
-                    BTCTradingSuggestionScreen* trading =
-                        static_cast<BTCTradingSuggestionScreen*>(currentScreen);
-                    trading->setBTCData(currentData);
-                }
-                break;
-
-            case SCREEN_TRADING_SUGGESTION:
-                // Trading → Dashboard (completes circle)
-                Serial.println("Navigating from Trading to Dashboard");
-                switchScreen(SCREEN_DASHBOARD);
-                break;
-
-            default:
-                Serial.println("Swipe not handled for this screen");
-                break;
-        }
-    }
+    // No swipe handling in new simple screen design
+    Serial.println("Swipe not used in single main screen");
 }
 
 bool ScreenManager::isHorizontalSwipe(int16_t deltaX, int16_t deltaY) {

@@ -11,12 +11,7 @@ enum Screen {
     SCREEN_WIFI_SCAN,
     SCREEN_WIFI_CONNECT,
 #endif
-    SCREEN_DASHBOARD,
-#ifndef SINGLE_SCREEN_MODE
-    SCREEN_BTC_NEWS,
-    SCREEN_TRADING_SUGGESTION,
-    SCREEN_SETTINGS
-#endif
+    SCREEN_MAIN
 };
 
 // Forward declarations
