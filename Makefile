@@ -1,7 +1,7 @@
 # Makefile for Bitcoin Dashboard (ESP32-S3)
 # Provides convenient shortcuts for PlatformIO commands
 
-.PHONY: help build build-single upload upload-single monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive patch-keys install-hooks uninstall-hooks sd-format sd-status sd-enable sd-disable sd-flush sd-memory
+.PHONY: help build build-single upload upload-single monitor clean test test-native test-hardware devices all update screenshot screenshot-interactive patch-keys install-hooks uninstall-hooks sd-format sd-status sd-enable sd-disable sd-flush sd-memory agents agents-stop agents-attach agents-status agents-logs agents-clean
 
 # Default target
 help:
@@ -46,6 +46,14 @@ help:
 	@echo "  make sd-disable            - Disable SD card logging"
 	@echo "  make sd-flush              - Force flush log buffer to SD"
 	@echo "  make sd-memory             - Log current memory usage"
+	@echo ""
+	@echo "Multi-Agent Development:"
+	@echo "  make agents                - Start multi-agent tmux session"
+	@echo "  make agents-attach         - Attach to running agent session"
+	@echo "  make agents-stop           - Stop multi-agent session"
+	@echo "  make agents-status         - Show agent session status"
+	@echo "  make agents-logs           - Show agent communication logs"
+	@echo "  make agents-clean          - Clean agent communication logs"
 	@echo ""
 
 # Build the project (multi-screen mode)
@@ -238,3 +246,25 @@ sd-flush:
 sd-memory:
 	@echo "Logging memory usage to SD card..."
 	@python3 scripts/send_serial_command.py /dev/cu.usbmodem101 "LOG_MEMORY"
+
+# Multi-Agent Development Session Management
+agents:
+	@echo "Starting multi-agent development session..."
+	@./scripts/tmux_agents.sh start
+
+agents-attach:
+	@echo "Attaching to multi-agent session..."
+	@./scripts/tmux_agents.sh attach
+
+agents-stop:
+	@echo "Stopping multi-agent session..."
+	@./scripts/tmux_agents.sh stop
+
+agents-status:
+	@./scripts/tmux_agents.sh status
+
+agents-logs:
+	@./scripts/tmux_agents.sh logs
+
+agents-clean:
+	@./scripts/tmux_agents.sh clean
