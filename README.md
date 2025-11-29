@@ -3,33 +3,43 @@
 [![PlatformIO CI](https://img.shields.io/badge/PlatformIO-passing-brightgreen)](https://platformio.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Displays live Bitcoin data from mempool.space API without requiring an API key.
+Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Features smooth 120 FPS vertical scrolling, AI-powered trading signals, and comprehensive Bitcoin metrics from mempool.space API.
 
 ![Bitcoin Dashboard](https://img.shields.io/badge/BTC-Dashboard-orange)
 
 ## Features
 
-### Core Dashboard
-- 💰 **Live BTC Price** - Real-time updates (USD/EUR) from mempool.space
-- 📈 **24h Change** - Price change tracking
-- 🧱 **Block Height** - Latest block information
+### Main Dashboard (Unified Screen)
+- 💰 **BTC Price (USD)** - Real-time price updates every 30 seconds
+- 💶 **BTC Price (EUR)** - Euro pricing
+- 🧱 **Block Height** - Latest block number
 - 📊 **Mempool Count** - Pending transactions
-- ⛽ **Fast Fee** - Current fee rate (sat/vB)
-- 📶 **WiFi Signal** - Network signal strength
+- ⛽ **Fee Rates** - Fast/Medium/Slow sat/vB
+- 📶 **WiFi Signal** - Network RSSI strength
+- 🤖 **DCA Signal (AI)** - Gemini AI recommendation (BUY/SELL/WAIT)
+- 📈 **Trading Signal (AI)** - 15m-1h timeframe analysis (BUY/SELL/HOLD)
 
 ### Display Features
-- 📱 **Simple Card Layout** - 6 data cards in 2-column grid
-- 📜 **Vertical Scroll** - Drag to scroll through all cards
-- 🔄 **Screen Rotation** - Tap top-right corner to rotate (0°/90°/180°/270°)
-- 🎨 **High Contrast Colors** - White text on dark cards for easy reading
-- ⚡ **Real-time Updates** - Auto-refresh every 30 seconds
+- 📜 **Smooth Vertical Scrolling** - 120 FPS with 8ms frame time
+- 🎨 **Bitcoin Orange Theme** - Orange header (#F7931A) with white text
+- 🃏 **8 Information Cards** - 4 rows, 2 columns layout
+- ⚡ **Optimized Rendering** - Batch operations with GPU clipping
+- 🔄 **Screen Rotation** - Tap top-right corner (0°/90°/180°/270°)
+- 📏 **412px Scroll Range** - Seamless card navigation
+
+### AI-Powered Analysis
+- 🧠 **Gemini AI Integration** - Trading signals and DCA recommendations
+- 🔄 **5-Minute Updates** - Balanced between freshness and API costs
+- 🎯 **Color-Coded Cards** - Visual feedback (Green=BUY, Red=SELL, Yellow/Gray=HOLD/WAIT)
 
 ### System Features
-- ⚙️ **Configuration System** - NVRAM storage for WiFi credentials
-- 🔄 **Auto-Reconnect** - Automatic WiFi reconnection on network loss
-- 📸 **Screenshot Capture** - Debug via serial screenshot transmission
-- 🔧 **Serial Commands** - Configure device via serial monitor (115200 baud)
-- 🌐 **WiFi Scan** - Touch-based network selection (on first boot)
+- ⚙️ **NVRAM Configuration** - Persistent WiFi credentials and API keys
+- 🔄 **Auto-Reconnect** - Automatic WiFi recovery
+- 📸 **Screenshot Capture** - Serial debugging with visual output
+- 🔧 **Serial Commands** - Full device control via UART (115200 baud)
+- 💾 **SD Card Logging** - Optional data logging to microSD
+- 🛡️ **Crash Handler** - Automatic exception logging and recovery
+- 📊 **Memory Monitoring** - RAM/Flash usage tracking
 
 ## Hardware Requirements
 
@@ -39,6 +49,7 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Dis
   - **PSRAM:** 2MB PSRAM (OPI)
   - **Display:** 3.5" IPS TFT LCD, 320x480 resolution, ST7796 driver
   - **Touch:** FT6X36 capacitive touch controller (I2C)
+  - **Storage:** MicroSD card slot (optional, for logging)
   - **Connectivity:** Wi-Fi 802.11 b/g/n (2.4GHz), Bluetooth 5.0 LE
   - **USB:** USB-C port for programming and power
   - **Dimensions:** Development board with integrated display
@@ -47,16 +58,53 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Dis
 
 ## Pin Configuration
 
-| Function | GPIO |
-|----------|------|
-| TFT MOSI | 13 |
-| TFT SCLK | 14 |
-| TFT CS | 15 |
-| TFT DC | 21 |
-| TFT RST | 22 |
-| TFT BL | 23 |
-| Touch SDA | 18 |
-| Touch SCL | 19 |
+### Display Interface (Parallel 8-bit)
+
+| Function | GPIO | Description |
+|----------|------|-------------|
+| **Data Bus** | | |
+| D0 | 9 | Data bit 0 |
+| D1 | 46 | Data bit 1 |
+| D2 | 3 | Data bit 2 |
+| D3 | 8 | Data bit 3 |
+| D4 | 18 | Data bit 4 |
+| D5 | 17 | Data bit 5 |
+| D6 | 16 | Data bit 6 |
+| D7 | 15 | Data bit 7 |
+| **Control Signals** | | |
+| WR (Write) | 47 | Write strobe |
+| RS (Register Select) | 0 | Command/Data select |
+| RST (Reset) | 4 | Display reset |
+| BL (Backlight) | 45 | PWM backlight control |
+
+### Touch Interface (I2C)
+
+| Function | GPIO | Description |
+|----------|------|-------------|
+| SDA | 18 | I2C data line |
+| SCL | 19 | I2C clock line |
+| INT | 7 | Touch interrupt (FT6X36) |
+
+### SD Card Interface (SPI)
+
+| Function | GPIO | Description |
+|----------|------|-------------|
+| CS (Chip Select) | 41 | SD card select |
+| MOSI (Data Out) | 40 | SPI data output |
+| MISO (Data In) | 38 | SPI data input |
+| CLK (Clock) | 39 | SPI clock |
+
+### Power and USB
+
+| Function | GPIO | Description |
+|----------|------|-------------|
+| USB D+ | 20 | USB-Serial/JTAG |
+| USB D- | 19 | USB-Serial/JTAG |
+| 5V | - | USB-C power input |
+| 3.3V | - | Regulated output for peripherals |
+| GND | - | Ground reference |
+
+**Note:** All GPIO assignments are hardware-defined in `src/DisplayConfig.h` and `src/utils/SDLogger.h`. Do not modify unless using custom hardware.
 
 ## Getting Started
 
@@ -64,6 +112,7 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Dis
 
 - [PlatformIO](https://platformio.org/) installed (VS Code extension or CLI)
 - WiFi network (2.4GHz only - ESP32-S3 doesn't support 5GHz)
+- Optional: Gemini API key for AI features ([Get Key](https://makersuite.google.com/app/apikey))
 
 ### Installation
 
@@ -73,35 +122,7 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Dis
    cd SC01-ESP32-Bitcoin-Dashboard
    ```
 
-2. **Configure WiFi credentials**
-
-   **Option A: Using Configuration Template (Recommended)**
-   ```bash
-   # Copy the template
-   cp configs/keys.txt.template .tmp/keys.txt
-
-   # Edit .tmp/keys.txt and add your credentials:
-   # SET_WIFI=YourNetworkSSID,YourNetworkPassword
-
-   # Apply configuration via serial monitor after first boot
-   # Or use: make patch-keys (if implemented)
-   ```
-
-   **Option B: Via Serial Monitor (After First Boot)**
-   ```
-   # Connect to serial monitor (115200 baud)
-   SET_WIFI=YourNetworkSSID,YourNetworkPassword
-   ```
-
-   **Option C: Edit Config.cpp (Legacy Method)**
-   ```cpp
-   // Edit src/Config.cpp if needed for hardcoded defaults
-   // Note: NVRAM configuration is preferred
-   ```
-
-3. **Build the project**
-
-   **Standard Build (Multi-Screen Mode):**
+2. **Build the project**
    ```bash
    # Using Make (recommended)
    make build
@@ -110,411 +131,405 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Dis
    pio run
    ```
 
-   **Single Screen Mode (Dashboard Only - Reduced Memory):**
+3. **Upload to device**
    ```bash
    # Using Make
-   make build-single
+   make flash
 
    # Or using PlatformIO directly
-   pio run -e sc01_plus_single
+   pio run --target upload && pio device monitor
    ```
 
-   Single Screen Mode:
-   - Dashboard-only (excludes WiFi, Settings, News, Trading screens)
-   - Saves ~51KB flash memory
-   - No swipe navigation
-   - Configure via serial commands only
-   - Ideal for simple, production deployments
-
-4. **Upload to device**
-   ```bash
-   # Using Make
-   make upload
-
-   # Or using PlatformIO directly
-   pio run --target upload
-   ```
-
-5. **Monitor serial output** (optional)
-   ```bash
-   # Using Make
-   make monitor
-
-   # Or using PlatformIO directly
-   pio device monitor
-   ```
-
-For a complete list of available commands, run `make help` or see the [Development Commands](#development-commands) section.
-
-## Configuration
-
-### WiFi Setup
-
-The device stores WiFi credentials in NVRAM (non-volatile memory). Three configuration methods are available:
-
-1. **Configuration Template** (Recommended for initial setup)
-   - Copy `configs/keys.txt.template` to `.tmp/keys.txt`
-   - Edit the file with your WiFi credentials and API keys
-   - Use serial monitor to send commands after first boot
-
-2. **Serial Monitor** (Recommended for updates)
+4. **Configure WiFi (via serial monitor at 115200 baud)**
    ```
    SET_WIFI=YourNetworkSSID,YourNetworkPassword
    STATUS  # Verify configuration
    ```
 
-3. **Settings Screen** (Touch interface)
-   - Navigate to Settings from the main dashboard
-   - Follow on-screen instructions to configure WiFi
+5. **Optional: Configure Gemini AI for trading signals**
+   ```
+   SET_GEMINI_KEY=AIzaSy...
+   STATUS  # Verify API key stored
+   ```
 
-### API Keys (Optional)
+For a complete list of available commands, run `make help`.
 
-For AI-powered features (Bitcoin News and Trading Suggestions):
+## Configuration
+
+### WiFi Setup
+
+The device stores credentials in NVRAM (non-volatile memory):
 
 ```bash
-# Gemini API (for Trading Suggestions)
-SET_GEMINI_KEY=AIzaSy...
-
-# OpenAI API (for Bitcoin News)
-SET_OPENAI_KEY=sk-proj-...
+# Connect to serial monitor (115200 baud)
+SET_WIFI=YourNetworkSSID,YourNetworkPassword
+STATUS  # Verify configuration saved
 ```
 
-Get your API keys:
-- **Gemini:** https://makersuite.google.com/app/apikey
-- **OpenAI:** https://platform.openai.com/api-keys
+### Gemini API Key (Optional - for AI features)
 
-See `docs/configuration-system-guide.md` for complete configuration documentation.
+```bash
+SET_GEMINI_KEY=AIzaSy...
+STATUS  # Verify key stored
+```
 
-## Usage
-
-Once powered on, the dashboard will:
-1. Connect to WiFi using stored credentials
-2. Fetch initial Bitcoin data from mempool.space
-3. Display real-time information across multiple screens
-4. Auto-update data at configured intervals
-
-### Navigation
-
-- **Main Dashboard** - BTC price, blocks, mempool, fees
-- **WiFi Icon** (tap) - Network selection and management
-- **Settings Icon** (tap) - Configuration and preferences
-- **News** - Bitcoin news with AI summaries (requires OpenAI key)
-- **Trading** - AI-powered trading insights (requires Gemini key)
+Get your Gemini API key: https://makersuite.google.com/app/apikey
 
 ### Update Intervals
 
-Default update intervals (configurable via serial or Settings screen):
-- **Price:** 30 seconds
-- **Block Info:** 60 seconds
-- **Mempool & Fees:** 30 seconds
+Customize data refresh rates:
 
-Change intervals via serial monitor:
-```
-SET_PRICE_INTERVAL=60000    # 60 seconds
-SET_BLOCK_INTERVAL=120000   # 2 minutes
-```
-
-## Customization
-
-### Change Update Intervals
-
-Use serial commands (no code changes needed):
 ```bash
-SET_PRICE_INTERVAL=60000     # Price updates every 60 seconds
-SET_BLOCK_INTERVAL=120000    # Block updates every 2 minutes
-SET_MEMPOOL_INTERVAL=45000   # Mempool updates every 45 seconds
-STATUS                       # Verify your changes
+SET_PRICE_INTERVAL=30000    # Price updates (milliseconds)
+SET_BLOCK_INTERVAL=60000    # Block updates
+SET_MEMPOOL_INTERVAL=30000  # Mempool updates
+SET_AI_INTERVAL=300000      # AI signal updates (5 minutes)
+STATUS                      # Verify changes
 ```
 
-Or edit via Settings screen (touch interface).
+### Serial Commands Reference
 
-### Add More Data
+| Command | Description |
+|---------|-------------|
+| `SET_WIFI=ssid,password` | Configure WiFi credentials |
+| `SET_GEMINI_KEY=key` | Set Gemini API key |
+| `SET_PRICE_INTERVAL=ms` | Price update interval |
+| `SET_BLOCK_INTERVAL=ms` | Block update interval |
+| `SET_MEMPOOL_INTERVAL=ms` | Mempool update interval |
+| `STATUS` | Show current configuration |
+| `SCREENSHOT` | Capture and send screen via serial |
+| `CHECK_SD_CARD` | SD card status |
+| `LOG_ENABLE` | Enable SD logging |
+| `LOG_DISABLE` | Disable SD logging |
+| `FORMAT_SD_CARD` | Format SD card (WARNING: deletes data!) |
 
-The [mempool.space API](https://mempool.space/docs/api) provides additional endpoints:
-- `/api/v1/difficulty-adjustment` - Difficulty adjustment data
-- `/api/v1/lightning/statistics/latest` - Lightning Network stats
-- `/api/address/{address}` - Address information
-- `/api/tx/{txid}` - Transaction details
+See `docs/guides/serial-commands-reference.md` for complete command documentation.
 
-## Device Limitations & Considerations
+## Usage
 
-### Current Hardware Utilization (v1.0.0-beta)
+### Screen Interaction
 
-**Flash Memory:**
-- **Used:** ~1.03 MB (1,031,961 bytes)
-- **Total:** 16 MB
-- **Available:** ~15 MB (93.6% free)
-- **Status:** ✅ Plenty of room for additional features
+- **Scroll:** Swipe up/down to navigate through 8 cards (412px scroll range)
+- **Rotate:** Tap top-right corner for 90° rotation (0°/90°/180°/270°)
+- **Data Updates:** Automatic every 30-60 seconds
+- **AI Signals:** Updated every 5 minutes (configurable)
 
-**RAM (SRAM):**
-- **Used:** ~48.4 KB (48,444 bytes)
-- **Total:** 320 KB
-- **Available:** ~272 KB (85.2% free)
-- **Status:** ✅ Sufficient headroom for operations
+### Card Layout (4 Rows × 2 Columns)
 
-**PSRAM (External):**
-- **Total:** 2 MB
-- **Usage:** Display buffers, LVGL graphics
-- **Status:** ✅ Adequate for current UI complexity
+```
+┌─────────────────┬─────────────────┐
+│ BTC Price (USD) │ BTC Price (EUR) │  Row 1
+├─────────────────┼─────────────────┤
+│ Block Height    │ Mempool Count   │  Row 2
+├─────────────────┼─────────────────┤
+│ Fast Fee        │ WiFi Signal     │  Row 3
+├─────────────────┼─────────────────┤
+│ DCA Signal (AI) │ Trading (AI)    │  Row 4
+└─────────────────┴─────────────────┘
+```
 
-### Practical Limitations
+**Scroll to see all 8 cards** - Smooth 120 FPS vertical scrolling
 
-**Network & API:**
-- ⚠️ **WiFi:** 2.4GHz only (ESP32-S3 limitation, no 5GHz support)
-- ⚠️ **API Rate Limits:** mempool.space may throttle excessive requests
-- ⚠️ **AI API Costs:** OpenAI/Gemini usage incurs costs (~$5-10/month at 5-min refresh)
-- ⚠️ **HTTP Timeout:** 10-second timeout per request (may fail on slow networks)
-- ⚠️ **Concurrent Connections:** Limited to 1 HTTP connection at a time
+### AI Signal Colors
 
-**Display & UI:**
-- ⚠️ **Screen Size:** 480x320 pixels limits information density
-- ⚠️ **Touch Accuracy:** Capacitive touch may require recalibration
-- ⚠️ **Scrolling:** Large text may require scrolling (implemented)
-- ⚠️ **Animations:** Limited smooth animations due to refresh rate
+**DCA Recommendation:**
+- 🟢 Green = BUY
+- 🔴 Red = SELL
+- 🟡 Yellow = WAIT
 
-**Power & Stability:**
-- ⚠️ **Power Source:** USB-powered only (no battery support yet)
-- ⚠️ **Long-term Stability:** Not tested beyond 24-48 hours continuous operation
-- ⚠️ **millis() Rollover:** Potential issue after 49 days of continuous operation
-- ⚠️ **Crash Recovery:** No watchdog timer implemented yet (on roadmap)
+**Trading Signal (15m-1h):**
+- 🟢 Green = BUY
+- 🔴 Red = SELL
+- ⚪ Gray = HOLD
 
-**Development State:**
-- ⚠️ **Beta Software:** v1.0.0-beta - features complete but stability testing ongoing
-- ⚠️ **Field Testing:** Limited to single development unit
-- ⚠️ **Error Handling:** Basic error recovery, not exhaustive
-- ⚠️ **Security:** WiFi/API keys stored in NVRAM (plaintext, not encrypted)
+## Multi-Agent Development System
 
-### Estimated Capacity
+The project includes a **tmux-based multi-agent development system** for parallel workflows:
 
-**Additional Features Possible:**
-- ✅ **2-3 more screens** without performance degradation
-- ✅ **5-10 more API integrations** with current RAM
-- ✅ **Historical charts** (limited data points due to RAM)
-- ✅ **Notification system** (Telegram/email)
-- ⚠️ **Video/animation** (limited by PSRAM and CPU)
-- ⚠️ **Complex visualizations** (may impact responsiveness)
+```bash
+# Start multi-agent session
+make agents
 
-**NOT Recommended:**
-- ❌ **Bitcoin full node** (insufficient storage and RAM)
-- ❌ **Mining operations** (ESP32 not designed for mining)
-- ❌ **Wallet/signing** (security concerns, no secure element)
-- ❌ **Real-time streaming** (network bandwidth and processing limits)
-- ❌ **Multiple simultaneous API calls** (connection limits)
+# Navigate between agents
+Ctrl-b 0  # Coordinator
+Ctrl-b 1  # ESP32 Hardware Specialist
+Ctrl-b 2  # UI/UX Designer
+Ctrl-b 3  # Bitcoin API Specialist
+Ctrl-b 4  # Embedded Debugger
+Ctrl-b 5  # Build Specialist
+Ctrl-b 6  # Global Monitor
 
-### Performance Expectations
+# Detach (session keeps running)
+Ctrl-b d
 
-**Typical Response Times:**
-- **WiFi Connect:** 2-5 seconds
-- **API Request:** 1-3 seconds (network dependent)
-- **AI Analysis:** 3-10 seconds (OpenAI/Gemini processing)
-- **Screen Navigation:** <100ms (instant feel)
-- **Touch Response:** <50ms (immediate feedback)
+# Reattach
+make agents-attach
 
-**Update Frequencies:**
-- **Price:** 30 seconds (configurable 10s-5min)
-- **Blocks:** 60 seconds (configurable 30s-10min)
-- **Mempool:** 30 seconds (configurable 10s-5min)
-- **Trading AI:** 5 minutes (configurable 1-60min, cost consideration)
-- **News:** Manual refresh (API cost consideration)
+# Stop session
+make agents-stop
+```
 
-### Recommendations for Optimal Operation
+### Agent Communication
 
-1. **WiFi Signal:** Maintain strong 2.4GHz signal (RSSI > -70 dBm)
-2. **API Keys:** Use separate development keys with rate limits
-3. **Update Intervals:** Balance freshness vs. API costs/limits
-4. **Power Supply:** Use quality USB power adapter (5V 2A minimum)
-5. **Monitoring:** Check serial output periodically for errors
-6. **Memory:** Monitor RAM usage if adding custom features
-7. **Testing:** Test new features in isolation before deployment
+Each agent can communicate with others:
 
-### Future Improvements (Roadmap)
+```bash
+agent_log "Starting task X"              # Log to own log
+agent_broadcast "Milestone completed"    # Broadcast to all
+agent_send target_agent "Data ready"     # Send to specific agent
+agent_read                               # Read recent messages
+```
 
-**Planned for v1.0.0 Stable:**
-- Watchdog timer for automatic crash recovery
-- millis() rollover handling (49-day bug fix)
-- Extended stability testing (48+ hours)
-- Memory leak detection and prevention
-
-**Planned for v2.0.0:**
-- Flash encryption for secure key storage
-- OTA firmware updates
-- Web configuration interface
-- MQTT monitoring for remote status
-
-See `docs/development/development-plan.md` for complete roadmap.
+See `CLAUDE.md` and `docs/guides/multi-agent-development.md` for complete workflows.
 
 ## Development Commands
 
 ### Using Make (Recommended)
 
-The project includes a Makefile for convenient shortcuts:
-
 ```bash
 # Build and Upload
 make build          # Build the project
 make upload         # Upload firmware to device
-make all            # Build and upload in one command
-make flash          # Upload and monitor serial output
+make all            # Build and upload
+make flash          # Upload and monitor
 
 # Monitoring
 make monitor        # Open serial monitor (115200 baud)
-make debug-monitor  # Monitor with exception decoder for debugging
+make debug-monitor  # Monitor with exception decoder
 
 # Maintenance
 make clean          # Clean build artifacts
-make devices        # List connected serial devices
-make update         # Update PlatformIO core and libraries
+make devices        # List connected devices
+make update         # Update PlatformIO and libraries
 
 # Development
-make erase          # Erase flash memory (useful for troubleshooting)
-make check          # Check environment and configuration
-make libs           # Show installed library dependencies
+make erase          # Erase flash memory
+make check          # Check configuration
+make libs           # Show library dependencies
 make info           # Show platform information
+
+# Multi-Agent Development
+make agents         # Start multi-agent tmux session
+make agents-attach  # Attach to running session
+make agents-stop    # Stop session
+make agents-status  # Show status
+make agents-logs    # View communication logs
+
+# SD Card
+make sd-format      # Format SD card (WARNING: deletes data!)
+make sd-status      # Check SD status
+make sd-enable      # Enable logging
+make sd-disable     # Disable logging
 ```
 
 Run `make help` to see all available commands.
 
-### Using PlatformIO CLI
+## Performance Specifications
 
-You can also use PlatformIO commands directly:
+### Current Metrics (v2.0.0)
 
-```bash
-# Build and flash
-pio run                              # Build the project
-pio run --target upload              # Upload firmware to device
-pio device monitor                   # Open serial monitor
+**Memory Usage:**
+- RAM: 16.3% (53,404 bytes / 320 KB)
+- Flash: 16.5% (1,078,861 bytes / 16 MB)
+- PSRAM: 2 MB available for display buffers
 
-# Debugging
-pio device monitor --filter esp32_exception_decoder  # Decode crash dumps
-pio device list                      # List connected devices
+**Rendering Performance:**
+- Scroll FPS: 110-120 FPS (target: 120 FPS)
+- Frame Time: 8-9ms (120 FPS = 8.33ms target)
+- Touch Response: <50ms (immediate feedback)
+- Screen Rotation: <100ms
 
-# Maintenance
-pio run --target clean               # Clean build files
-pio lib update                       # Update libraries
+**Network Performance:**
+- WiFi Connect: 2-5 seconds
+- API Request: 1-3 seconds (network dependent)
+- AI Analysis: 3-10 seconds (Gemini processing)
+- Update Intervals: 30s (price), 60s (blocks), 5min (AI)
+
+### Optimization Techniques
+
+1. **120 FPS Scrolling:**
+   - 8ms frame time limit
+   - Batch rendering (`startWrite`/`endWrite`)
+   - GPU clipping regions
+   - Simplified card rendering (no shadows/rounded corners)
+
+2. **Memory Efficiency:**
+   - Single display buffer (no double buffering)
+   - Static allocation (no dynamic malloc during runtime)
+   - Optimized data structures
+
+3. **API Rate Limiting:**
+   - Conservative update intervals
+   - HTTP timeout: 10 seconds
+   - Graceful failure handling
+
+## Architecture
+
+### Core Components
+
+```
+src/
+├── main.cpp                 # Entry point, setup, serial commands
+├── DisplayConfig.h          # LovyanGFX pin configuration
+├── Config.cpp/h             # NVRAM configuration system
+├── api/
+│   ├── BTCData.h            # Bitcoin data structures
+│   ├── GeminiClient.cpp/h   # Gemini AI integration
+│   └── OpenAIClient.cpp/h   # OpenAI integration (future)
+├── screens/
+│   ├── MainScreen.cpp/h     # Unified dashboard screen
+│   ├── ScreenManager.cpp/h  # Screen lifecycle management
+│   └── WiFiScanScreen.cpp/h # WiFi network selection
+└── utils/
+    ├── CrashHandler.cpp/h   # Exception logging
+    └── SDLogger.cpp/h       # SD card data logging
+```
+
+### Data Flow
+
+```
+┌─────────────┐    HTTP     ┌──────────────┐    JSON    ┌──────────┐
+│ mempool.space│ ─────────> │ MainScreen   │ ─────────> │ BTCData  │
+│ API          │             │ fetch*()     │            │ struct   │
+└─────────────┘             └──────────────┘            └──────────┘
+                                    │                          │
+                                    │ updateUI()               │
+                                    ▼                          ▼
+                            ┌──────────────┐            ┌──────────┐
+                            │ drawContent()│ ◄───reads──│ btcData  │
+                            └──────────────┘            └──────────┘
+                                    │
+                                    │ LGFX draw calls
+                                    ▼
+                            ┌──────────────┐
+                            │ ST7796 LCD   │
+                            │ 320x480      │
+                            └──────────────┘
 ```
 
 ## API Data Source
 
 This project uses the free [mempool.space API](https://mempool.space) with no authentication required.
 
-**Rate Limiting:** Be mindful of request frequency to avoid rate limiting. Default intervals are conservative.
+**Endpoints Used:**
+- `/api/v1/prices` - BTC price in USD/EUR
+- `/api/v1/blocks` - Latest block information
+- `/api/mempool` - Mempool statistics
+- `/api/v1/fees/recommended` - Fee rate recommendations
+
+**Rate Limiting:** Be mindful of request frequency. Default intervals are conservative (30-60 seconds).
 
 ## Troubleshooting
 
-### Display Not Working
-- Verify GPIO pins match your hardware in `platformio.ini`
-- Try different rotation values in `src/main.cpp`:
-  ```cpp
-  tft.setRotation(0-3);  // Try values 0, 1, 2, or 3
-  ```
+### Display Issues
 
-### WiFi Connection Failed
-- Ensure you're using a 2.4GHz network (ESP32-S3 doesn't support 5GHz)
-- Double-check SSID and password in `src/main.cpp`
-- Monitor serial output for connection errors
+- **Blank Screen:** Check power supply (5V 2A minimum via USB-C)
+- **Wrong Orientation:** Use rotation button (tap top-right corner)
+- **Touch Not Working:** Verify I2C pins (SDA=18, SCL=19, INT=7)
+- **Garbled Display:** Hardware issue - check parallel bus connections
+
+### WiFi Connection
+
+- **Connection Failed:** Ensure 2.4GHz network (ESP32-S3 doesn't support 5GHz)
+- **Credentials Error:** Use `SET_WIFI=ssid,password` via serial (115200 baud)
+- **Weak Signal:** Check RSSI in WiFi card (target: >-70 dBm)
 
 ### Data Not Updating
-- Check serial monitor for HTTP request errors
-- Verify internet connectivity
-- mempool.space may have rate limits - try increasing update intervals
+
+- **Check Serial Monitor:** Look for HTTP errors or timeouts
+- **Network Issues:** Verify internet connectivity
+- **API Rate Limiting:** Increase update intervals if mempool.space throttles requests
+
+### AI Signals Not Working
+
+- **No Gemini Key:** Configure with `SET_GEMINI_KEY=your_key`
+- **API Quota:** Check Gemini API usage limits (free tier: 60 requests/minute)
+- **Network Timeout:** AI requests take 3-10 seconds, may timeout on slow networks
+
+### SD Card Logging
+
+- **Card Not Detected:** Check formatting (must be FAT32)
+- **Logging Disabled:** Use `LOG_ENABLE` command
+- **Check Status:** Use `CHECK_SD_CARD` command
+- **Format Card:** Use `FORMAT_SD_CARD` (WARNING: deletes all data!)
+
+See `docs/guides/debugging.md` for detailed troubleshooting procedures.
 
 ## Project Structure
 
 ```
 btc-dashboard/
 ├── src/
-│   ├── main.cpp          # Main application code
-│   ├── lv_conf.h         # LVGL configuration
-│   ├── DisplayConfig.h   # Display configuration
-│   └── screens/          # Screen implementations
-├── libs/                 # Internal/custom libraries
-│   └── (empty - project-specific libraries)
-├── docs/                 # Documentation directory
-│   ├── README.md         # Documentation index
-│   ├── WT32-SC01_Plus_ESP32-S3_Datasheet.pdf  # Hardware datasheet
-│   ├── debugging-guide.md        # Debugging procedures
-│   ├── development-plan.md       # Development roadmap
-│   ├── manual-upload-guide.md    # Manual upload instructions
-│   └── ui-improvements.md        # UI enhancement roadmap
-├── scripts/              # Build and automation scripts
-│   └── (empty - reserved for future scripts)
-├── releases/             # Pre-compiled firmware binaries
-│   └── (empty - releases will be added here)
-├── platformio.ini        # PlatformIO configuration
-├── Makefile              # Build automation shortcuts
-├── README.md             # This file
-└── CLAUDE.md             # Claude Code documentation
+│   ├── main.cpp             # Main application code
+│   ├── DisplayConfig.h      # Display pin configuration
+│   ├── Config.cpp/h         # NVRAM configuration system
+│   ├── api/                 # API clients and data structures
+│   ├── screens/             # Screen implementations
+│   └── utils/               # Utilities (SD logging, crash handler)
+├── docs/
+│   ├── guides/              # User guides and tutorials
+│   ├── features/            # Feature specifications
+│   ├── development/         # Development roadmap
+│   └── testing/             # Testing documentation
+├── scripts/
+│   ├── tmux_agents.sh       # Multi-agent session manager
+│   ├── monitor_serial.py    # Serial monitoring tools
+│   └── capture_debug_screens.py  # Screenshot capture
+├── .claude/
+│   ├── agents/              # Specialized agent definitions
+│   └── hooks/               # Git hooks for automation
+├── platformio.ini           # PlatformIO configuration
+├── Makefile                 # Build automation
+├── README.md                # This file
+└── CLAUDE.md                # Multi-agent development guide
 ```
-
-### Directory Purposes
-
-- **src/** - Main application source code
-- **libs/** - Internal project-specific libraries (auto-included by PlatformIO)
-- **docs/** - All documentation files (guides, datasheets, plans)
-- **scripts/** - Build automation, testing, and deployment scripts
-- **releases/** - Versioned firmware binaries for distribution
-- **.claude/** - Claude Code configuration (agents, hooks)
 
 ## Dependencies
 
-### External Libraries
-
-These libraries are automatically downloaded by PlatformIO (defined in `platformio.ini`):
+### External Libraries (Auto-installed by PlatformIO)
 
 - [LovyanGFX](https://github.com/lovyan03/LovyanGFX) v1.1.0 - Modern graphics and display driver
 - [ArduinoJson](https://arduinojson.org/) v6.21.0 - JSON parsing for API responses
 - [FT6X36](https://github.com/strange-v/FT6X36) - Capacitive touch controller driver
 
-### Internal Libraries
+### Internal Components
 
-Project-specific libraries in the `libs/` directory (currently empty). Future internal libraries may include:
-- Bitcoin API client wrappers
-- Display management utilities
-- Custom UI components
-- Hardware abstraction layers
+Project-specific code in `src/`:
+- Bitcoin API clients (GeminiClient, OpenAIClient)
+- Screen management system
+- NVRAM configuration
+- SD card logging
+- Crash handler
 
-Internal libraries are automatically discovered and included by PlatformIO - no additional configuration needed.
+## Device Limitations
 
-## Releases
+### Network
+- ⚠️ WiFi: 2.4GHz only (no 5GHz support)
+- ⚠️ API Rate Limits: mempool.space may throttle requests
+- ⚠️ AI API Costs: ~$5-10/month at 5-minute refresh
 
-Pre-compiled firmware binaries will be available in the `releases/` directory for easy deployment without requiring a build environment.
+### Display & UI
+- ⚠️ Screen Size: 480x320 pixels limits information density
+- ⚠️ Touch Accuracy: May require careful tapping on small elements
 
-### Creating a Release
+### Power & Stability
+- ⚠️ Power Source: USB-powered only (no battery)
+- ⚠️ millis() Rollover: Potential issue after 49 days uptime
+- ⚠️ Long-term Stability: Crash handler mitigates but not exhaustively tested
 
-To create a firmware release:
-
-1. Build the project:
-   ```bash
-   make build
-   ```
-
-2. Locate the compiled binary:
-   ```
-   .pio/build/sc01_plus/firmware.bin
-   ```
-
-3. Copy and rename with version:
-   ```bash
-   cp .pio/build/sc01_plus/firmware.bin releases/btc-dashboard-v1.0.0-sc01plus.bin
-   ```
-
-4. Document changes in `releases/CHANGELOG.md`
-
-### Flashing Pre-compiled Firmware
-
-To flash a pre-compiled binary:
-
-```bash
-# Using esptool.py
-esptool.py --chip esp32s3 --port /dev/cu.usbserial-* write_flash 0x0 releases/btc-dashboard-v*.bin
-
-# Or using PlatformIO
-pio run --target upload --upload-port /dev/cu.usbserial-*
-```
+### Security
+- ⚠️ Plaintext Storage: WiFi/API keys in NVRAM (not encrypted)
+- ⚠️ No Secure Element: Not suitable for wallet/signing operations
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Test thoroughly on actual hardware
+4. Submit a Pull Request
+
+See `CLAUDE.md` for multi-agent development workflows.
 
 ## License
 
@@ -522,15 +537,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Bitcoin data provided by [mempool.space](https://mempool.space)
-- Built with [PlatformIO](https://platformio.org/)
-- UI powered by [LVGL](https://lvgl.io/)
+- Bitcoin data: [mempool.space](https://mempool.space) API
+- AI analysis: [Google Gemini](https://ai.google.dev/) API
+- Built with: [PlatformIO](https://platformio.org/)
+- Graphics: [LovyanGFX](https://github.com/lovyan03/LovyanGFX)
 
 ## Support
 
 For issues and questions:
 - Open an [issue](https://github.com/bemindlab/SC01-ESP32-Bitcoin-Dashboard/issues)
 - Check [mempool.space API docs](https://mempool.space/docs/api)
+- Read [multi-agent development guide](CLAUDE.md)
 
 ---
 
