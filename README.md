@@ -106,6 +106,47 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Fea
 
 **Note:** All GPIO assignments are hardware-defined in `src/DisplayConfig.h` and `src/utils/SDLogger.h`. Do not modify unless using custom hardware.
 
+### Available GPIOs (Unused)
+
+The following GPIOs are **available for custom expansion** (sensors, actuators, additional peripherals):
+
+| GPIO | Notes | Recommended Use |
+|------|-------|-----------------|
+| **1** | Available | General I/O |
+| **2** | Available | General I/O, ADC1_CH1 |
+| **5** | Available | General I/O |
+| **6** | Available | General I/O |
+| **10** | Available | General I/O |
+| **11** | Available | General I/O |
+| **12** | Available | General I/O, ADC2_CH1 |
+| **13** | Available | General I/O, ADC2_CH2 |
+| **14** | Available | General I/O, ADC2_CH3 |
+| **21** | Available | General I/O |
+| **42** | Available | General I/O (MTMS) |
+| **43** | Available | General I/O (MTCK) |
+| **44** | Available | General I/O (MTDO) |
+| **48** | Available | General I/O (RGB LED on some boards) |
+
+**Total Available:** 14 GPIOs
+
+**Usage Examples:**
+- **Temperature Sensor:** GPIO 2 (DHT22, DS18B20)
+- **Relay Control:** GPIO 5, 6 (for switching devices)
+- **Additional I2C:** GPIO 10 (SDA), GPIO 11 (SCL) - for extra sensors
+- **Additional SPI:** GPIO 12 (MISO), GPIO 13 (MOSI), GPIO 14 (CLK), GPIO 21 (CS)
+- **Status LEDs:** GPIO 42, 43, 44
+- **RGB LED:** GPIO 48 (if present on board)
+
+**Reserved/Unavailable GPIOs:**
+- **26-37:** Internal Flash/PSRAM (not exposed)
+- **0, 3, 45, 46:** Strapping pins (used by display)
+- **19, 20:** USB D-/D+ (Serial/JTAG)
+
+**Caution:**
+- Some GPIOs have bootstrap/strapping requirements - consult ESP32-S3 datasheet
+- GPIO 0 is a strapping pin (already used by display RS)
+- ADC2 (GPIO 12-14) cannot be used when WiFi is active
+
 ## Getting Started
 
 ### Prerequisites
