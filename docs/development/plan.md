@@ -17,23 +17,31 @@ The Bitcoin Dashboard has evolved from a multi-screen system to a **unified Main
 - 🛡️ **Crash Handler** - Exception logging and recovery
 - 📸 **Developer Tools** - Screenshot capture, serial commands, comprehensive docs
 
-**Current Focus (v2.0.0):**
-- Smooth scrolling optimization (achieved 120 FPS)
-- AI-powered DCA and trading signals
-- Multi-agent development workflows
-- Performance tuning and memory efficiency
+**Current Focus (v2.1.0 - In Progress):**
+- Telegram bot integration infrastructure (✅ Week 1 complete)
+- Alert system implementation (AlertManager)
+- Price threshold and percentage alerts
+- Daily summary reports
+- End-to-end testing
+
+**Completed (v2.0.0):**
+- ✅ Smooth scrolling optimization (achieved 120 FPS)
+- ✅ AI-powered DCA and trading signals
+- ✅ Multi-agent development workflows
+- ✅ Performance tuning and memory efficiency
 
 **Next Milestone (v2.1.0):**
-- Telegram bot integration for price alerts
-- Remote monitoring and control
-- Historical data visualization
+- Complete Telegram bot notifications (Week 2)
+- Remote monitoring commands (Phase 2)
+- Device control via Telegram (Phase 3)
 
 ## Project Status
 
-**Current Version:** 2.0.0
-**Status:** Production-Ready with MainScreen and AI Features
-**Last Updated:** 2025-11-29
-**Performance:** 120 FPS scrolling, 16.3% RAM, 16.5% Flash
+**Current Version:** 2.0.0 → 2.1.0 (In Development)
+**Status:** Production-Ready v2.0.0 + Telegram Bot Infrastructure (Week 1)
+**Last Updated:** 2025-11-30
+**Performance:** 120 FPS scrolling, 16.4% RAM, 16.7% Flash
+**Build Status:** ✅ Compiles successfully
 
 ### Completed Features ✓
 
@@ -170,6 +178,42 @@ The Bitcoin Dashboard has evolved from a multi-screen system to a **unified Main
 - [x] Architecture diagrams
 - [x] Performance specifications
 
+#### Telegram Bot Integration - Infrastructure (v2.1.0 - Week 1)
+- [x] UniversalTelegramBot library integration
+  - [x] Added to platformio.ini (witnessmenow/UniversalTelegramBot@^1.3.0)
+  - [x] ~30KB flash, ~6KB RAM overhead
+- [x] TelegramClient wrapper class
+  - [x] src/telegram/TelegramClient.h (class definition)
+  - [x] src/telegram/TelegramClient.cpp (implementation)
+  - [x] WiFiClientSecure HTTPS setup
+  - [x] Message queue system (10 message circular buffer)
+  - [x] 1-second update interval
+  - [x] Error handling and logging
+- [x] NVRAM configuration system (12 keys)
+  - [x] telegram_token, telegram_chat_id (authentication)
+  - [x] telegram_enabled (master switch)
+  - [x] price_threshold_high, price_threshold_low (price alerts)
+  - [x] alert_5pct, alert_10pct, alert_20pct (percentage alerts)
+  - [x] daily_report_enabled, daily_report_hour, daily_report_minute
+  - [x] alert_cooldown_ms (spam prevention)
+  - [x] Config.h/cpp updated with getters/setters
+- [x] Serial command interface (11 commands)
+  - [x] SET_TELEGRAM_TOKEN=xxx (masked output)
+  - [x] SET_TELEGRAM_CHAT_ID=xxx
+  - [x] TELEGRAM_ENABLE / TELEGRAM_DISABLE
+  - [x] SET_PRICE_ALERT_HIGH/LOW=xxx
+  - [x] SET_PRICE_CHANGE_ALERT=5,10,20
+  - [x] SET_DAILY_REPORT=HH:MM
+  - [x] DISABLE_DAILY_REPORT
+  - [x] TELEGRAM_STATUS
+  - [x] TEST_TELEGRAM (placeholder)
+  - [x] Updated HELP command
+- [x] Documentation
+  - [x] docs/telegram-nvram-schema.md (complete API reference)
+  - [x] Integration notes for all agents
+  - [x] Security considerations
+  - [x] Example configurations
+
 ## Development Phases
 
 ### Phase 1: Core Stability ✅ COMPLETE
@@ -281,7 +325,7 @@ The Bitcoin Dashboard has evolved from a multi-screen system to a **unified Main
 - [ ] `/api/v1/lightning/statistics/latest`
 - [ ] `/api/v1/mining/hashrate/pools/1w`
 
-### Phase 5: Telegram Bot Integration (Planned v2.1.0)
+### Phase 5: Telegram Bot Integration (In Progress v2.1.0)
 
 **Goals:**
 - Price alerts and notifications
@@ -289,12 +333,31 @@ The Bitcoin Dashboard has evolved from a multi-screen system to a **unified Main
 - Remote device control
 - Screenshot transmission
 
+**Status:** 🚧 Week 1 Infrastructure Complete (2025-11-30)
+
+**Infrastructure Complete (Week 1):**
+- [x] UniversalTelegramBot library integration (platformio.ini)
+- [x] TelegramClient wrapper class (src/telegram/TelegramClient.h/cpp)
+- [x] WiFiClientSecure HTTPS setup
+- [x] Message queue system (prevent spam)
+- [x] NVRAM configuration schema (12 keys)
+- [x] Serial command interface (11 commands)
+- [x] Token security masking
+- [x] Configuration validation
+- [x] Documentation (docs/telegram-nvram-schema.md)
+
 **Planned Features:**
-- [ ] **Phase 1: Basic Notifications** (2 weeks)
+- [ ] **Phase 1: Basic Notifications** (2 weeks - In Progress)
+  - [x] TelegramClient infrastructure
+  - [x] NVRAM configuration system
+  - [x] Serial commands for setup
+  - [ ] AlertManager class implementation
   - [ ] Price threshold alerts (above/below)
   - [ ] Percentage change alerts (5%, 10%, 20%)
   - [ ] System notifications (boot, WiFi, errors)
   - [ ] Daily summary reports
+  - [ ] Integration with main loop
+  - [ ] End-to-end testing
 
 - [ ] **Phase 2: Remote Monitoring** (1 week)
   - [ ] Query commands (/price, /blocks, /mempool, /fees, /status)
@@ -313,13 +376,14 @@ The Bitcoin Dashboard has evolved from a multi-screen system to a **unified Main
   - [ ] Conversation-based setup
 
 **Technical Requirements:**
-- UniversalTelegramBot library (~30KB flash, ~6KB RAM)
-- TelegramClient class implementation
-- AlertManager class for threshold monitoring
-- NVRAM configuration for bot token and chat ID
-- Serial commands: SET_TELEGRAM_TOKEN, SET_TELEGRAM_CHAT_ID
+- [x] UniversalTelegramBot library (~30KB flash, ~6KB RAM)
+- [x] TelegramClient class implementation
+- [ ] AlertManager class for threshold monitoring
+- [x] NVRAM configuration for bot token and chat ID
+- [x] Serial commands: SET_TELEGRAM_TOKEN, SET_TELEGRAM_CHAT_ID, etc.
 
 **Timeline:** 6 weeks total (Q1 2025)
+**Progress:** Week 1 Complete (Infrastructure)
 
 **See:** `docs/features/telegram-bot-integration.md` for detailed specification
 

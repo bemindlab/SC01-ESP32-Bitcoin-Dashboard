@@ -37,6 +37,20 @@ bool ConfigManager::load() {
     // Load system flags
     config.firstRun = preferences.getBool(CONFIG_KEY_FIRST_RUN, true);
 
+    // Load Telegram configuration
+    config.telegramToken = preferences.getString(CONFIG_KEY_TELEGRAM_TOKEN, "");
+    config.telegramChatId = preferences.getString(CONFIG_KEY_TELEGRAM_CHAT_ID, "");
+    config.telegramEnabled = preferences.getBool(CONFIG_KEY_TELEGRAM_ENABLED, false);
+    config.priceAlertHigh = preferences.getFloat(CONFIG_KEY_PRICE_ALERT_HIGH, 0.0f);
+    config.priceAlertLow = preferences.getFloat(CONFIG_KEY_PRICE_ALERT_LOW, 0.0f);
+    config.alert5Percent = preferences.getBool(CONFIG_KEY_ALERT_5PCT, false);
+    config.alert10Percent = preferences.getBool(CONFIG_KEY_ALERT_10PCT, false);
+    config.alert20Percent = preferences.getBool(CONFIG_KEY_ALERT_20PCT, false);
+    config.dailyReportEnabled = preferences.getBool(CONFIG_KEY_DAILY_REPORT_EN, false);
+    config.dailyReportHour = preferences.getInt(CONFIG_KEY_DAILY_REPORT_HR, DEFAULT_DAILY_REPORT_HOUR);
+    config.dailyReportMinute = preferences.getInt(CONFIG_KEY_DAILY_REPORT_MIN, DEFAULT_DAILY_REPORT_MINUTE);
+    config.alertCooldown = preferences.getULong(CONFIG_KEY_ALERT_COOLDOWN, DEFAULT_ALERT_COOLDOWN);
+
     preferences.end();
 
     isLoaded = true;
@@ -72,6 +86,20 @@ bool ConfigManager::save() {
 
     // Save system flags
     preferences.putBool(CONFIG_KEY_FIRST_RUN, config.firstRun);
+
+    // Save Telegram configuration
+    preferences.putString(CONFIG_KEY_TELEGRAM_TOKEN, config.telegramToken);
+    preferences.putString(CONFIG_KEY_TELEGRAM_CHAT_ID, config.telegramChatId);
+    preferences.putBool(CONFIG_KEY_TELEGRAM_ENABLED, config.telegramEnabled);
+    preferences.putFloat(CONFIG_KEY_PRICE_ALERT_HIGH, config.priceAlertHigh);
+    preferences.putFloat(CONFIG_KEY_PRICE_ALERT_LOW, config.priceAlertLow);
+    preferences.putBool(CONFIG_KEY_ALERT_5PCT, config.alert5Percent);
+    preferences.putBool(CONFIG_KEY_ALERT_10PCT, config.alert10Percent);
+    preferences.putBool(CONFIG_KEY_ALERT_20PCT, config.alert20Percent);
+    preferences.putBool(CONFIG_KEY_DAILY_REPORT_EN, config.dailyReportEnabled);
+    preferences.putInt(CONFIG_KEY_DAILY_REPORT_HR, config.dailyReportHour);
+    preferences.putInt(CONFIG_KEY_DAILY_REPORT_MIN, config.dailyReportMinute);
+    preferences.putULong(CONFIG_KEY_ALERT_COOLDOWN, config.alertCooldown);
 
     preferences.end();
 
@@ -197,6 +225,103 @@ bool ConfigManager::isValid() const {
     return valid;
 }
 
+void ConfigManager::setTelegramToken(const String& token) {
+    config.telegramToken = token;
+    Serial.println("Telegram bot token updated");
+
+    // Log with masked token (show only last 4 chars)
+    if (token.length() > 4) {
+        String masked = "..." + token.substring(token.length() - 4);
+        sdLogger.logf(LOG_INFO, "Telegram bot token updated: %s (%d chars)",
+                     masked.c_str(), token.length());
+    } else {
+        sdLogger.log(LOG_INFO, "Telegram bot token updated: ****");
+    }
+}
+
+void ConfigManager::setTelegramChatId(const String& chatId) {
+    config.telegramChatId = chatId;
+    Serial.printf("Telegram chat ID updated: %s\n", chatId.c_str());
+    sdLogger.logf(LOG_INFO, "Telegram chat ID updated: %s", chatId.c_str());
+}
+
+void ConfigManager::setTelegramEnabled(bool enabled) {
+    config.telegramEnabled = enabled;
+    Serial.printf("Telegram notifications: %s\n", enabled ? "ENABLED" : "DISABLED");
+    sdLogger.logf(LOG_INFO, "Telegram notifications %s", enabled ? "enabled" : "disabled");
+}
+
+void ConfigManager::setPriceAlertHigh(float threshold) {
+    config.priceAlertHigh = threshold;
+    if (threshold > 0) {
+        Serial.printf("Price alert (high) set to: $%.2f\n", threshold);
+        sdLogger.logf(LOG_INFO, "Price alert high threshold set: $%.2f", threshold);
+    } else {
+        Serial.println("Price alert (high) disabled");
+        sdLogger.log(LOG_INFO, "Price alert high threshold disabled");
+    }
+}
+
+void ConfigManager::setPriceAlertLow(float threshold) {
+    config.priceAlertLow = threshold;
+    if (threshold > 0) {
+        Serial.printf("Price alert (low) set to: $%.2f\n", threshold);
+        sdLogger.logf(LOG_INFO, "Price alert low threshold set: $%.2f", threshold);
+    } else {
+        Serial.println("Price alert (low) disabled");
+        sdLogger.log(LOG_INFO, "Price alert low threshold disabled");
+    }
+}
+
+void ConfigManager::setAlert5Percent(bool enabled) {
+    config.alert5Percent = enabled;
+    Serial.printf("5%% price change alert: %s\n", enabled ? "ENABLED" : "DISABLED");
+    sdLogger.logf(LOG_INFO, "5%% price change alert %s", enabled ? "enabled" : "disabled");
+}
+
+void ConfigManager::setAlert10Percent(bool enabled) {
+    config.alert10Percent = enabled;
+    Serial.printf("10%% price change alert: %s\n", enabled ? "ENABLED" : "DISABLED");
+    sdLogger.logf(LOG_INFO, "10%% price change alert %s", enabled ? "enabled" : "disabled");
+}
+
+void ConfigManager::setAlert20Percent(bool enabled) {
+    config.alert20Percent = enabled;
+    Serial.printf("20%% price change alert: %s\n", enabled ? "ENABLED" : "DISABLED");
+    sdLogger.logf(LOG_INFO, "20%% price change alert %s", enabled ? "enabled" : "disabled");
+}
+
+void ConfigManager::setDailyReportEnabled(bool enabled) {
+    config.dailyReportEnabled = enabled;
+    Serial.printf("Daily report: %s\n", enabled ? "ENABLED" : "DISABLED");
+    sdLogger.logf(LOG_INFO, "Daily report %s", enabled ? "enabled" : "disabled");
+}
+
+void ConfigManager::setDailyReportTime(int hour, int minute) {
+    // Validate hour and minute
+    if (hour < 0 || hour > 23) {
+        Serial.printf("ERROR: Invalid hour %d (must be 0-23)\n", hour);
+        sdLogger.logf(LOG_ERROR, "Invalid daily report hour: %d", hour);
+        return;
+    }
+    if (minute < 0 || minute > 59) {
+        Serial.printf("ERROR: Invalid minute %d (must be 0-59)\n", minute);
+        sdLogger.logf(LOG_ERROR, "Invalid daily report minute: %d", minute);
+        return;
+    }
+
+    config.dailyReportHour = hour;
+    config.dailyReportMinute = minute;
+    Serial.printf("Daily report time set to: %02d:%02d\n", hour, minute);
+    sdLogger.logf(LOG_INFO, "Daily report time set: %02d:%02d", hour, minute);
+}
+
+void ConfigManager::setAlertCooldown(unsigned long cooldown) {
+    config.alertCooldown = cooldown;
+    Serial.printf("Alert cooldown set to: %lu ms (%lu min)\n", cooldown, cooldown / 60000);
+    sdLogger.logf(LOG_INFO, "Alert cooldown set: %lu ms (%lu min)", cooldown, cooldown / 60000);
+}
+
 void ConfigManager::printConfig() const {
     Serial.println("\n--- Current Configuration ---");
 
@@ -239,6 +364,53 @@ void ConfigManager::printConfig() const {
 
     // System flags
     Serial.printf("First Run: %s\n", config.firstRun ? "YES" : "NO");
+
+    // Telegram configuration
+    Serial.println("\n[Telegram Configuration]");
+    if (config.telegramToken.length() > 4) {
+        String masked = "..." + config.telegramToken.substring(config.telegramToken.length() - 4);
+        Serial.printf("Bot Token: %s (%d chars)\n", masked.c_str(), config.telegramToken.length());
+    } else if (config.telegramToken.length() > 0) {
+        Serial.println("Bot Token: ****");
+    } else {
+        Serial.println("Bot Token: NOT SET");
+    }
+
+    if (config.telegramChatId.length() > 0) {
+        Serial.printf("Chat ID: %s\n", config.telegramChatId.c_str());
+    } else {
+        Serial.println("Chat ID: NOT SET");
+    }
+
+    Serial.printf("Notifications: %s\n", config.telegramEnabled ? "ENABLED" : "DISABLED");
+
+    // Price alerts
+    if (config.priceAlertHigh > 0) {
+        Serial.printf("Price Alert (High): $%.2f\n", config.priceAlertHigh);
+    } else {
+        Serial.println("Price Alert (High): DISABLED");
+    }
+
+    if (config.priceAlertLow > 0) {
+        Serial.printf("Price Alert (Low): $%.2f\n", config.priceAlertLow);
+    } else {
+        Serial.println("Price Alert (Low): DISABLED");
+    }
+
+    // Percentage alerts
+    Serial.printf("5%% Change Alert: %s\n", config.alert5Percent ? "ENABLED" : "DISABLED");
+    Serial.printf("10%% Change Alert: %s\n", config.alert10Percent ? "ENABLED" : "DISABLED");
+    Serial.printf("20%% Change Alert: %s\n", config.alert20Percent ? "ENABLED" : "DISABLED");
+
+    // Daily report
+    Serial.printf("Daily Report: %s", config.dailyReportEnabled ? "ENABLED" : "DISABLED");
+    if (config.dailyReportEnabled) {
+        Serial.printf(" at %02d:%02d", config.dailyReportHour, config.dailyReportMinute);
+    }
+    Serial.println();
+
+    Serial.printf("Alert Cooldown: %lu ms (%lu min)\n",
+                 config.alertCooldown, config.alertCooldown / 60000);
 
     Serial.println("-----------------------------\n");
 }

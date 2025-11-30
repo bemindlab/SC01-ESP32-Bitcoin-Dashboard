@@ -167,6 +167,18 @@ void processSerialCommand() {
             Serial.println("  SET_GEMINI_KEY=xxx - Set Gemini API key");
             Serial.println("  SET_OPENAI_KEY=xxx - Set OpenAI API key");
             Serial.println("  RESET_CONFIG       - Reset all configuration");
+            Serial.println("\n[Telegram Bot Configuration]");
+            Serial.println("  SET_TELEGRAM_TOKEN=xxx       - Set Telegram bot token from @BotFather");
+            Serial.println("  SET_TELEGRAM_CHAT_ID=xxx     - Set your Telegram chat ID");
+            Serial.println("  TELEGRAM_ENABLE              - Enable Telegram notifications");
+            Serial.println("  TELEGRAM_DISABLE             - Disable Telegram notifications");
+            Serial.println("  SET_PRICE_ALERT_HIGH=xxx     - Set upper price alert threshold (0=disable)");
+            Serial.println("  SET_PRICE_ALERT_LOW=xxx      - Set lower price alert threshold (0=disable)");
+            Serial.println("  SET_PRICE_CHANGE_ALERT=5,10  - Enable percentage alerts (5,10,20)");
+            Serial.println("  SET_DAILY_REPORT=HH:MM       - Enable daily report at specified time");
+            Serial.println("  DISABLE_DAILY_REPORT         - Disable daily reports");
+            Serial.println("  TEST_TELEGRAM                - Test Telegram configuration");
+            Serial.println("  TELEGRAM_STATUS              - Show Telegram configuration status");
             Serial.println("\n[SD Card]");
             Serial.println("  CHECK_SD_CARD      - Check SD card status (detailed diagnostics)");
             Serial.println("  REINIT_SD          - Reinitialize SD card (hot-swap recovery)");
@@ -243,6 +255,210 @@ void processSerialCommand() {
             globalConfig.reset();
             globalConfig.save();
             Serial.println("✓ Configuration reset complete!");
+        } else if (command.startsWith("SET_TELEGRAM_TOKEN=")) {
+            String token = command.substring(19);
+            token.trim();
+            if (token.length() > 0) {
+                globalConfig.setTelegramToken(token);
+                if (globalConfig.save()) {
+                    Serial.println("✓ Telegram bot token saved successfully!");
+                } else {
+                    Serial.println("✗ Failed to save Telegram token");
+                }
+            } else {
+                Serial.println("✗ Invalid token (empty)");
+            }
+        } else if (command.startsWith("SET_TELEGRAM_CHAT_ID=")) {
+            String chatId = command.substring(21);
+            chatId.trim();
+            if (chatId.length() > 0) {
+                globalConfig.setTelegramChatId(chatId);
+                if (globalConfig.save()) {
+                    Serial.println("✓ Telegram chat ID saved successfully!");
+                } else {
+                    Serial.println("✗ Failed to save chat ID");
+                }
+            } else {
+                Serial.println("✗ Invalid chat ID (empty)");
+            }
+        } else if (command == "TELEGRAM_ENABLE") {
+            if (globalConfig.hasTelegramConfig()) {
+                globalConfig.setTelegramEnabled(true);
+                if (globalConfig.save()) {
+                    Serial.println("✓ Telegram notifications enabled!");
+                } else {
+                    Serial.println("✗ Failed to save configuration");
+                }
+            } else {
+                Serial.println("✗ Cannot enable: Telegram not configured");
+                Serial.println("  Use SET_TELEGRAM_TOKEN and SET_TELEGRAM_CHAT_ID first");
+            }
+        } else if (command == "TELEGRAM_DISABLE") {
+            globalConfig.setTelegramEnabled(false);
+            if (globalConfig.save()) {
+                Serial.println("✓ Telegram notifications disabled!");
+            } else {
+                Serial.println("✗ Failed to save configuration");
+            }
+        } else if (command.startsWith("SET_PRICE_ALERT_HIGH=")) {
+            String value = command.substring(21);
+            value.trim();
+            float threshold = value.toFloat();
+            if (threshold > 0 || value == "0") {
+                globalConfig.setPriceAlertHigh(threshold);
+                if (globalConfig.save()) {
+                    if (threshold > 0) {
+                        Serial.printf("✓ High price alert set to: $%.2f\n", threshold);
+                    } else {
+                        Serial.println("✓ High price alert disabled");
+                    }
+                } else {
+                    Serial.println("✗ Failed to save configuration");
+                }
+            } else {
+                Serial.println("✗ Invalid threshold value");
+            }
+        } else if (command.startsWith("SET_PRICE_ALERT_LOW=")) {
+            String value = command.substring(20);
+            value.trim();
+            float threshold = value.toFloat();
+            if (threshold > 0 || value == "0") {
+                globalConfig.setPriceAlertLow(threshold);
+                if (globalConfig.save()) {
+                    if (threshold > 0) {
+                        Serial.printf("✓ Low price alert set to: $%.2f\n", threshold);
+                    } else {
+                        Serial.println("✓ Low price alert disabled");
+                    }
+                } else {
+                    Serial.println("✗ Failed to save configuration");
+                }
+            } else {
+                Serial.println("✗ Invalid threshold value");
+            }
+        } else if (command.startsWith("SET_PRICE_CHANGE_ALERT=")) {
+            String alerts = command.substring(23);
+            alerts.trim();
+
+            // Parse comma-separated percentages (e.g., "5,10,20")
+            bool alert5 = false, alert10 = false, alert20 = false;
+            int commaPos;
+
+            while (alerts.length() > 0) {
+                commaPos = alerts.indexOf(',');
+                String pct = (commaPos > 0) ? alerts.substring(0, commaPos) : alerts;
+                pct.trim();
+
+                if (pct == "5") alert5 = true;
+                else if (pct == "10") alert10 = true;
+                else if (pct == "20") alert20 = true;
+
+                if (commaPos > 0) {
+                    alerts = alerts.substring(commaPos + 1);
+                } else {
+                    break;
+                }
+            }
+
+            globalConfig.setAlert5Percent(alert5);
+            globalConfig.setAlert10Percent(alert10);
+            globalConfig.setAlert20Percent(alert20);
+
+            if (globalConfig.save()) {
+                Serial.println("✓ Price change alerts configured:");
+                Serial.printf("  5%%: %s\n", alert5 ? "ENABLED" : "DISABLED");
+                Serial.printf("  10%%: %s\n", alert10 ? "ENABLED" : "DISABLED");
+                Serial.printf("  20%%: %s\n", alert20 ? "ENABLED" : "DISABLED");
+            } else {
+                Serial.println("✗ Failed to save configuration");
+            }
+        } else if (command.startsWith("SET_DAILY_REPORT=")) {
+            String timeStr = command.substring(17);
+            timeStr.trim();
+
+            // Parse HH:MM format
+            int colonPos = timeStr.indexOf(':');
+            if (colonPos > 0) {
+                String hourStr = timeStr.substring(0, colonPos);
+                String minStr = timeStr.substring(colonPos + 1);
+
+                int hour = hourStr.toInt();
+                int minute = minStr.toInt();
+
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    globalConfig.setDailyReportTime(hour, minute);
+                    globalConfig.setDailyReportEnabled(true);
+
+                    if (globalConfig.save()) {
+                        Serial.printf("✓ Daily report enabled at %02d:%02d\n", hour, minute);
+                    } else {
+                        Serial.println("✗ Failed to save configuration");
+                    }
+                } else {
+                    Serial.println("✗ Invalid time (hour: 0-23, minute: 0-59)");
+                }
+            } else {
+                Serial.println("✗ Invalid format. Use: SET_DAILY_REPORT=HH:MM");
+                Serial.println("  Example: SET_DAILY_REPORT=08:00");
+            }
+        } else if (command == "DISABLE_DAILY_REPORT") {
+            globalConfig.setDailyReportEnabled(false);
+            if (globalConfig.save()) {
+                Serial.println("✓ Daily report disabled");
+            } else {
+                Serial.println("✗ Failed to save configuration");
+            }
+        } else if (command == "TEST_TELEGRAM") {
+            Serial.println("=== Telegram Test ===");
+            if (globalConfig.hasTelegramConfig()) {
+                Serial.println("Telegram configuration found:");
+                String token = globalConfig.getTelegramToken();
+                String chatId = globalConfig.getTelegramChatId();
+                Serial.printf("  Token: ...%s (%d chars)\n",
+                             token.substring(token.length() - 4).c_str(), token.length());
+                Serial.printf("  Chat ID: %s\n", chatId.c_str());
+                Serial.printf("  Enabled: %s\n", globalConfig.isTelegramEnabled() ? "YES" : "NO");
+                Serial.println("\n⚠️  Note: Actual message sending requires TelegramClient implementation");
+                Serial.println("  This test only validates configuration is stored correctly");
+            } else {
+                Serial.println("✗ Telegram not configured");
+                Serial.println("  Use SET_TELEGRAM_TOKEN and SET_TELEGRAM_CHAT_ID first");
+            }
+        } else if (command == "TELEGRAM_STATUS") {
+            Serial.println("\n=== Telegram Configuration Status ===");
+            Serial.printf("Bot Token: %s\n",
+                         globalConfig.getTelegramToken().length() > 0 ? "SET" : "NOT SET");
+            Serial.printf("Chat ID: %s\n",
+                         globalConfig.getTelegramChatId().length() > 0 ? "SET" : "NOT SET");
+            Serial.printf("Notifications: %s\n",
+                         globalConfig.isTelegramEnabled() ? "ENABLED" : "DISABLED");
+            Serial.println("\n[Price Alerts]");
+            if (globalConfig.getPriceAlertHigh() > 0) {
+                Serial.printf("  High: $%.2f\n", globalConfig.getPriceAlertHigh());
+            } else {
+                Serial.println("  High: DISABLED");
+            }
+            if (globalConfig.getPriceAlertLow() > 0) {
+                Serial.printf("  Low: $%.2f\n", globalConfig.getPriceAlertLow());
+            } else {
+                Serial.println("  Low: DISABLED");
+            }
+            Serial.println("\n[Price Change Alerts]");
+            Serial.printf("  5%%: %s\n", globalConfig.isAlert5Percent() ? "ENABLED" : "DISABLED");
+            Serial.printf("  10%%: %s\n", globalConfig.isAlert10Percent() ? "ENABLED" : "DISABLED");
+            Serial.printf("  20%%: %s\n", globalConfig.isAlert20Percent() ? "ENABLED" : "DISABLED");
+            Serial.println("\n[Daily Report]");
+            if (globalConfig.isDailyReportEnabled()) {
+                Serial.printf("  Time: %02d:%02d\n",
+                             globalConfig.getDailyReportHour(),
+                             globalConfig.getDailyReportMinute());
+            } else {
+                Serial.println("  DISABLED");
+            }
+            Serial.printf("\n[Alert Cooldown]\n  %lu ms (%lu minutes)\n",
+                         globalConfig.getAlertCooldown(),
+                         globalConfig.getAlertCooldown() / 60000);
+            Serial.println("=====================================");
         }
     }
 }
