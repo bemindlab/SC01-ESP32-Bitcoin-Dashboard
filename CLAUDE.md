@@ -259,11 +259,21 @@ Claude Code hooks are configured in `.claude/hooks/` to enforce documentation ru
 
 ## Project Overview
 
-Bitcoin Dashboard for Panlee SC01 Plus - A real-time Bitcoin data display running on ESP32-S3 with 3.5" IPS touch screen. Fetches live data from mempool.space API (no API key required) and displays:
+Bitcoin Dashboard for Panlee SC01 Plus - A real-time Bitcoin data display running on ESP32-S3 with 3.5" IPS touch screen. Features:
+
+**Display:**
 - BTC price (USD/EUR) - updates every 30 seconds
 - Latest block info (height, TX count)
 - Mempool statistics (pending TXs, size)
 - Fee rates (Fast/Medium/Slow sat/vB)
+- AI-powered DCA and trading signals (Gemini API)
+- Smooth 120 FPS vertical scrolling
+
+**Telegram Bot Integration (v2.1.0 - In Progress):**
+- TelegramClient wrapper class (infrastructure complete)
+- NVRAM configuration for bot token and chat ID
+- Serial commands for setup and configuration
+- Price alerts and daily reports (alert logic in development)
 
 ## Development Commands
 

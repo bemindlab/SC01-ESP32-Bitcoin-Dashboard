@@ -41,6 +41,14 @@ Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Fea
 - 🛡️ **Crash Handler** - Automatic exception logging and recovery
 - 📊 **Memory Monitoring** - RAM/Flash usage tracking
 
+### Telegram Bot Integration (v2.1.0 - Infrastructure Ready)
+- 📱 **TelegramClient Class** - HTTPS message sending with queue system
+- 🔔 **Price Alerts** - Configurable threshold and percentage alerts
+- 📅 **Daily Reports** - Scheduled Bitcoin summaries
+- 🔐 **Secure Configuration** - Token masking and NVRAM storage
+- 🎛️ **Serial Setup** - 11 commands for bot configuration
+- 🚧 **Status:** Infrastructure complete, alert logic in development
+
 ## Hardware Requirements
 
 - **Board:** Panlee SC01 Plus (WT32-SC01 Plus)
@@ -230,6 +238,7 @@ STATUS                      # Verify changes
 
 ### Serial Commands Reference
 
+#### Configuration Commands
 | Command | Description |
 |---------|-------------|
 | `SET_WIFI=ssid,password` | Configure WiFi credentials |
@@ -238,13 +247,32 @@ STATUS                      # Verify changes
 | `SET_BLOCK_INTERVAL=ms` | Block update interval |
 | `SET_MEMPOOL_INTERVAL=ms` | Mempool update interval |
 | `STATUS` | Show current configuration |
+
+#### Telegram Bot Commands (v2.1.0)
+| Command | Description |
+|---------|-------------|
+| `SET_TELEGRAM_TOKEN=token` | Set Telegram bot token (from @BotFather) |
+| `SET_TELEGRAM_CHAT_ID=id` | Set Telegram chat ID |
+| `TELEGRAM_ENABLE` | Enable Telegram notifications |
+| `TELEGRAM_DISABLE` | Disable Telegram notifications |
+| `SET_PRICE_ALERT_HIGH=value` | Set upper price alert threshold |
+| `SET_PRICE_ALERT_LOW=value` | Set lower price alert threshold |
+| `SET_PRICE_CHANGE_ALERT=5,10,20` | Enable percentage alerts |
+| `SET_DAILY_REPORT=HH:MM` | Set daily report time (UTC) |
+| `DISABLE_DAILY_REPORT` | Disable daily reports |
+| `TELEGRAM_STATUS` | Show Telegram configuration |
+| `TEST_TELEGRAM` | Send test message to bot |
+
+#### Debugging & Logging
+| Command | Description |
+|---------|-------------|
 | `SCREENSHOT` | Capture and send screen via serial |
 | `CHECK_SD_CARD` | SD card status |
 | `LOG_ENABLE` | Enable SD logging |
 | `LOG_DISABLE` | Disable SD logging |
 | `FORMAT_SD_CARD` | Format SD card (WARNING: deletes data!) |
 
-See `docs/guides/serial-commands-reference.md` for complete command documentation.
+See `docs/guides/serial-commands-reference.md` and `docs/telegram-nvram-schema.md` for complete command documentation.
 
 ## Usage
 
@@ -506,11 +534,15 @@ btc-dashboard/
 │   ├── Config.cpp/h         # NVRAM configuration system
 │   ├── api/                 # API clients and data structures
 │   ├── screens/             # Screen implementations
+│   ├── telegram/            # Telegram bot integration (v2.1.0)
+│   │   ├── TelegramClient.cpp/h   # Telegram API wrapper
+│   │   └── (AlertManager - coming soon)
 │   └── utils/               # Utilities (SD logging, crash handler)
 ├── docs/
 │   ├── guides/              # User guides and tutorials
 │   ├── features/            # Feature specifications
 │   ├── development/         # Development roadmap
+│   ├── telegram-nvram-schema.md  # Telegram configuration API
 │   └── testing/             # Testing documentation
 ├── scripts/
 │   ├── tmux_agents.sh       # Multi-agent session manager
