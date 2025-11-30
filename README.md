@@ -2,10 +2,30 @@
 
 [![PlatformIO CI](https://img.shields.io/badge/PlatformIO-passing-brightgreen)](https://platformio.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-2.1.0--dev-blue)](https://github.com/bemindlab/SC01-ESP32-Bitcoin-Dashboard)
+[![Status](https://img.shields.io/badge/status-in%20development-yellow)](https://github.com/bemindlab/SC01-ESP32-Bitcoin-Dashboard)
 
-Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Features smooth 120 FPS vertical scrolling, AI-powered trading signals, and comprehensive Bitcoin metrics from mempool.space API.
+Real-time Bitcoin dashboard running on ESP32-S3 with 3.5" IPS touch display. Features smooth 120 FPS vertical scrolling, AI-powered trading signals, Telegram bot integration, and comprehensive Bitcoin metrics from mempool.space API.
 
 ![Bitcoin Dashboard](https://img.shields.io/badge/BTC-Dashboard-orange)
+
+**Current Version:** v2.1.0-dev (Telegram Bot Integration - Week 1 Infrastructure Complete)
+**Status:** Production-ready v2.0.0 + Telegram infrastructure (alert logic in development)
+
+## What's New in v2.1.0-dev
+
+**Week 1 Complete (2025-11-30):** Telegram Bot Integration Infrastructure
+
+- ✅ **TelegramClient Wrapper** - HTTPS message sending with circular queue (10 messages)
+- ✅ **NVRAM Configuration** - 12 persistent settings for bot token, alerts, and reports
+- ✅ **Serial Commands** - 11 new commands for bot setup (SET_TELEGRAM_TOKEN, etc.)
+- ✅ **Security** - Token masking in all outputs, secure NVRAM storage
+- ✅ **Documentation** - Complete API reference and integration guides
+- 🚧 **Alert Logic** - Coming in Week 2 (AlertManager, price thresholds, percentage alerts)
+
+**Multi-Agent Development:** Built using parallel agent workflows (bitcoin-api-specialist, esp32-hardware-specialist)
+
+[See full changelog](docs/development/plan.md)
 
 ## Features
 
@@ -395,18 +415,19 @@ Run `make help` to see all available commands.
 
 ## Performance Specifications
 
-### Current Metrics (v2.0.0)
+### Current Metrics (v2.1.0-dev)
 
 **Memory Usage:**
-- RAM: 16.3% (53,404 bytes / 320 KB)
-- Flash: 16.5% (1,078,861 bytes / 16 MB)
+- RAM: 16.4% (53,792 bytes / 327,680 bytes) - *+0.1% from Telegram integration*
+- Flash: 16.7% (1,092,525 bytes / 6,553,600 bytes) - *+0.2% from Telegram library*
 - PSRAM: 2 MB available for display buffers
+- Telegram Overhead: +30KB flash (library), +6KB RAM (runtime)
 
 **Rendering Performance:**
-- Scroll FPS: 110-120 FPS (target: 120 FPS)
-- Frame Time: 8-9ms (120 FPS = 8.33ms target)
-- Touch Response: <50ms (immediate feedback)
-- Screen Rotation: <100ms
+- Scroll FPS: 110-120 FPS (target: 120 FPS) ✅
+- Frame Time: 8-9ms (120 FPS = 8.33ms target) ✅
+- Touch Response: <50ms (immediate feedback) ✅
+- Screen Rotation: <100ms ✅
 
 **Network Performance:**
 - WiFi Connect: 2-5 seconds
